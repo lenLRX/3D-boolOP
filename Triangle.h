@@ -113,8 +113,9 @@ private:
 };
 
 struct TriangleIntersection{
+	TriangleIntersection(){}
 	TriangleIntersection(Triangle _T1,Triangle _T2,VxVector _V1,VxVector _V2):
-        T1(_T1),T2(_T2),V1(_V1),V2(_V2),T1valid(true),T2valid(true){;}
+        T1(_T1),T2(_T2),V1(_V1),V2(_V2),T1valid(true),T2valid(true){}
 	Triangle T1,T2;
 	VxVector V1,V2;
 	bool T1valid;
@@ -147,7 +148,7 @@ public:
 
 	bool valid(){
 		for(int i = 0;i < 3;i++){
-			if(pointInTriangle.v[i] > 1.0f + 0.001 || pointInTriangle.v[i] < 0 - 0.001)
+			if(pointInTriangle.v[i] > 1.0f || pointInTriangle.v[i] < 0)
 				return false;
 		}
 		return true;
@@ -159,6 +160,440 @@ public:
 };
 
 typedef std::vector<TriangleIntersection> Intersections;
+
+static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2){
+	Intersections ret;
+	bool T1inT2[3];
+	bool T2inT1[3];
+
+	int T1inT2Count = 0;
+    int T2inT1Count = 0;
+
+	for(int i = 0;i < 3;i++){
+		PointInTriangle p1(T2,T1.v[i]);
+		PointInTriangle p2(T1,T2.v[i]);
+		if(p1.valid()){
+			T1inT2[i] = true;
+			T1inT2Count++;
+		}
+
+		if(p2.valid()){
+			T2inT1[i] = true;
+			T2inT1Count++;
+		}
+	}
+
+	if(3 == T1inT2Count){
+		if(T2inT1Count){
+			return Intersections();
+		}else{
+			for(int i = 0;i < 3;i++){
+				TriangleIntersection intersection(T1,T2,T1.v[i],T1.v[(i + 1) % 3]);
+				intersection.T1valid = false;
+				intersection.T2valid = true;
+				ret.push_back(intersection);
+			}
+		}
+	}else if(3 == T2inT1Count){
+		if(T1inT2Count){
+			return Intersections();
+		}else{
+			for(int i = 0;i < 3;i++){
+				TriangleIntersection intersection(T1,T2,T2.v[i],T2.v[(i + 1) % 3]);
+				intersection.T1valid = true;
+				intersection.T2valid = false;
+				ret.push_back(intersection);
+			}
+		}
+	}else if(0 == T1inT2Count){
+		if(0 == T2inT1Count){
+			return Intersections();
+		}else if(1 == T2inT1Count){
+			int theT2PointinT1 = -1;//let it crash
+			for(int i = 0;i < 3;i++){
+				if(T2inT1[i]){
+					theT2PointinT1 = i;
+					break;
+				}
+			}
+
+			const VxVector& T2origin = T2.v[theT2PointinT1];
+			const VxVector& T2e1 = T2.v[(theT2PointinT1 + 1) % 3];
+			const VxVector& T2e2 = T2.v[(theT2PointinT1 + 2) % 3];
+			bool T2gote1 = false;
+			bool T2gote2 = false;
+
+			VxVector cross1;
+			VxVector cross2;
+
+			for(int i = 0;i < 3;i++){
+				if(!T2gote1){
+					bool b = SegmentIntersection(T2origin,T2e1,T1.v[i],T1.v[(i + 1) % 3],cross1);
+					if(b){
+						T2gote1 = true;
+					}
+				}
+				if(!T2gote2){
+					bool b = SegmentIntersection(T2origin,T2e2,T1.v[i],T1.v[(i + 1) % 3],cross2);
+					if(b){
+						T2gote2 = true;
+					}
+				}
+			}//for
+
+			TriangleIntersection i1(T1,T2,cross1,cross2);// in T2
+			i1.T1valid = false;
+			i1.T2valid = true;
+
+			TriangleIntersection i2(T1,T2,cross1,T2origin);
+			i2.T1valid = true;
+			i2.T2valid = false;
+
+			TriangleIntersection i3(T1,T2,cross2,T2origin);
+			i3.T1valid = true;
+			i3.T2valid = false;
+
+			ret.push_back(i1);
+			ret.push_back(i2);
+			ret.push_back(i3);
+			return ret;
+		}//if(1 == T2inT1Count)
+		else if(2 == T2inT1Count){
+			int theT2PointNotinT1 = -1;
+			for(int i = 0;i < 3;i++){
+				if(!T2inT1[i]){
+					theT2PointNotinT1 = i;
+					break;
+				}
+			}
+
+			const VxVector& T2origin = T2.v[theT2PointNotinT1];
+			const VxVector& T2e1 = T2.v[(theT2PointNotinT1 + 1) % 3];
+			const VxVector& T2e2 = T2.v[(theT2PointNotinT1 + 2) % 3];
+			bool T2gote1 = false;
+			bool T2gote2 = false;
+
+			VxVector cross1;
+			VxVector cross2;
+
+			for(int i = 0;i < 3;i++){
+				if(!T2gote1){
+					bool b = SegmentIntersection(T2origin,T2e1,T1.v[i],T1.v[(i + 1) % 3],cross1);
+					if(b){
+						T2gote1 = true;
+					}
+				}
+				if(!T2gote2){
+					bool b = SegmentIntersection(T2origin,T2e2,T1.v[i],T1.v[(i + 1) % 3],cross2);
+					if(b){
+						T2gote2 = true;
+					}
+				}
+			}//for
+
+			TriangleIntersection i1(T1,T2,cross1,cross2);
+			i1.T1valid = false;
+			i1.T2valid = true;
+
+			TriangleIntersection i2(T1,T2,T2e1,T2e2);
+			i2.T1valid = true;
+			i2.T2valid = false;
+
+			TriangleIntersection i3(T1,T2,T2e1,cross1);
+			i3.T1valid = true;
+			i3.T2valid = false;
+
+			TriangleIntersection i4(T1,T2,T2e2,cross2);
+			i4.T1valid = true;
+			i4.T2valid = false;
+
+			ret.push_back(i1);
+			ret.push_back(i2);
+			ret.push_back(i3);
+			ret.push_back(i4);
+			return ret;
+		}//if(2 == T2inT1Count)
+		else
+			DEBUGBREAK
+	}else if(1 == T1inT2Count){
+		int theT1PointinT2 = -1;//let it crash
+		for(int i = 0;i < 3;i++){
+			if(T1inT2[i]){
+				theT1PointinT2 = i;
+				break;
+			}
+		}
+
+		const VxVector& origin = T1.v[theT1PointinT2];
+		const VxVector& e1 = T1.v[(theT1PointinT2 + 1) % 3];
+		const VxVector& e2 = T1.v[(theT1PointinT2 + 2) % 3];
+		bool gote1 = false;
+		bool gote2 = false;
+
+		VxVector cross1;
+		int cross1No = -1;
+		VxVector cross2;
+		int cross2No = -1;
+		for(int i = 0;i < 3;i++){
+			if(!gote1){
+				bool b = SegmentIntersection(origin,e1,T2.v[i],T2.v[(i + 1) % 3],cross1);
+				if(T2inT1[i]){
+					cross1No = i + 1;
+				}else
+				    cross1No = i;
+				if(b){
+					gote1 = true;
+				}
+			}
+			if(!gote2){
+				bool b = SegmentIntersection(origin,e2,T2.v[i],T2.v[(i + 1) % 3],cross2);
+				if(T2inT1[i]){
+					cross2No = i + 1;
+				}else{
+					cross2No = i;
+				}
+				if(b){
+					gote2 = true;
+				}
+			}
+		}//for
+
+		if(0 == T2inT1Count){
+
+			TriangleIntersection i1(T1,T2,cross1,cross2);
+			i1.T1valid = true;
+			i1.T2valid = false;
+			
+			TriangleIntersection i2(T1,T2,cross1,origin);
+			i2.T1valid = false;
+			i2.T2valid = true;
+
+			TriangleIntersection i3(T1,T2,cross2,origin);
+			i3.T1valid = false;
+			i3.T2valid = true;
+
+			ret.push_back(i1);
+			ret.push_back(i2);
+			ret.push_back(i3);
+			return ret;
+		}//if(0 == T2inT1Count)
+		else if(1 == T2inT1Count){
+			int theT2PointinT1;
+			for(int i = 0;i < 3;i++){
+				if(T2inT1[i]){
+					theT2PointinT1 = i;
+					break;
+				}
+			}
+
+			const VxVector& T2origin = T2.v[theT2PointinT1];
+			TriangleIntersection i1(T1,T2,T2origin,cross1);
+			i1.T1valid = true;
+			i1.T2valid = false;
+
+			TriangleIntersection i2(T1,T2,T2origin,cross2);
+			i2.T1valid = true;
+			i2.T2valid = false;
+
+			TriangleIntersection i3(T1,T2,origin,cross1);
+			i3.T1valid = false;
+			i3.T2valid = true;
+
+			TriangleIntersection i4(T1,T2,origin,cross2);
+			i4.T1valid = false;
+			i4.T2valid = true;
+
+			ret.push_back(i1);
+			ret.push_back(i2);
+			ret.push_back(i3);
+			ret.push_back(i4);
+			return ret;
+		}//if(1 == T2inT1Count)
+		else if(2 == T2inT1Count){
+			int theT2PointNotinT1 = -1;
+			for(int i = 0;i < 3;i++){
+				if(!T2inT1[i]){
+					theT2PointNotinT1 = i;
+					break;
+				}
+			}
+
+			const VxVector& T2origin = T2.v[theT2PointNotinT1];
+
+			TriangleIntersection i1(T1,T2,T2origin,cross1);
+			i1.T1valid = false;
+			i1.T2valid = true;
+
+			TriangleIntersection i2(T1,T2,T2origin,cross2);
+			i2.T1valid = false;
+			i2.T2valid = true;
+
+			TriangleIntersection i3(T1,T2,T2.v[(theT2PointNotinT1 + 1) % 3],T2.v[(theT2PointNotinT1 + 2) % 3]);
+			i3.T1valid = true;
+			i3.T2valid = false;
+
+			TriangleIntersection i4;
+			i4.T1 = T1;
+			i4.T2 = T2;
+			i4.T1valid = true;
+			i4.T2valid = false;
+
+			TriangleIntersection i5;
+			i5.T1 = T1;
+			i5.T2 = T2;
+			i5.T1valid = true;
+			i5.T2valid = false;
+
+			i4.V1 = cross1;
+			i4.V2 = T2.v[(theT2PointNotinT1 + 1) % 3];
+			i5.V1 = cross2;
+			i5.V2 = T2.v[(theT2PointNotinT1 + 2) % 3];
+			if(cross1No != (theT2PointNotinT1 + 1) % 3){
+				std::swap(i4.V2,i5.V2);
+			}
+
+			ret.push_back(i1);
+			ret.push_back(i2);
+			ret.push_back(i3);
+            ret.push_back(i4);
+			ret.push_back(i5);
+			return ret;
+		}//if(2 == T2inT1Count)
+		else
+			DEBUGBREAK
+	}//1 == T1inT2Count
+	else if(2 == T1inT2Count){
+		if(0 == T2inT1Count){
+			int theT1PointNotinT2 = -1;
+			for(int i = 0;i < 3;i++){
+				if(!T1inT2[i]){
+					theT1PointNotinT2 = i;
+					break;
+				}
+			}
+
+			const VxVector& T1origin = T1.v[theT1PointNotinT2];
+			const VxVector& T1e1 = T1.v[(theT1PointNotinT2 + 1) % 3];
+			const VxVector& T1e2 = T1.v[(theT1PointNotinT2 + 2) % 3];
+			bool T1gote1 = false;
+			bool T1gote2 = false;
+
+			VxVector cross1;
+			VxVector cross2;
+
+			for(int i = 0;i < 3;i++){
+				if(!T1gote1){
+					bool b = SegmentIntersection(T1origin,T1e1,T2.v[i],T2.v[(i + 1) % 3],cross1);
+					if(b){
+						T1gote1 = true;
+					}
+				}
+				if(!T1gote2){
+					bool b = SegmentIntersection(T1origin,T1e2,T2.v[i],T2.v[(i + 1) % 3],cross2);
+					if(b){
+						T1gote2 = true;
+					}
+				}
+			}//for
+
+			TriangleIntersection i1(T1,T2,cross1,cross2);
+			i1.T1valid = true;
+			i1.T2valid = false;
+
+			TriangleIntersection i2(T1,T2,cross1,T1e1);
+			i2.T1valid = false;
+			i2.T2valid = true;
+
+			TriangleIntersection i3(T1,T2,cross2,T1e2);
+			i3.T1valid = false;
+			i3.T2valid = true;
+
+			TriangleIntersection i4(T1,T2,T1e1,T1e2);
+			i4.T1valid = false;
+			i4.T2valid = true;
+
+			ret.push_back(i1);
+			ret.push_back(i2);
+			ret.push_back(i3);
+			ret.push_back(i4);
+			return ret;
+
+		}//if(0 == T2inT1Count)
+		else if(1 == T2inT1Count){
+			int theT1PointNotinT2 = -1;
+			for(int i = 0;i < 3;i++){
+				if(!T1inT2[i]){
+					theT1PointNotinT2 = i;
+					break;
+				}
+			}
+
+			int theT2PointinT1;
+			for(int i = 0;i < 3;i++){
+				if(T2inT1[i]){
+					theT2PointinT1 = i;
+					break;
+				}
+			}
+
+			const VxVector& T1origin = T1.v[theT1PointNotinT2];
+			const VxVector& T1e1 = T1.v[(theT1PointNotinT2 + 1) % 3];
+			const VxVector& T1e2 = T1.v[(theT1PointNotinT2 + 2) % 3];
+			bool T1gote1 = false;
+			bool T1gote2 = false;
+
+			VxVector cross1;
+			VxVector cross2;
+
+			for(int i = 0;i < 3;i++){
+				if(!T1gote1){
+					bool b = SegmentIntersection(T1origin,T1e1,T2.v[i],T2.v[(i + 1) % 3],cross1);
+					if(b){
+						T1gote1 = true;
+					}
+				}
+				if(!T1gote2){
+					bool b = SegmentIntersection(T1origin,T1e2,T2.v[i],T2.v[(i + 1) % 3],cross2);
+					if(b){
+						T1gote2 = true;
+					}
+				}
+			}//for
+
+			TriangleIntersection i1(T1,T2,cross1,cross2);
+			i1.T1valid = false;
+			i1.T2valid = true;
+
+			TriangleIntersection i2(T1,T2,cross1,T1e1);
+			i2.T1valid = false;
+			i2.T2valid = true;
+
+			TriangleIntersection i3(T1,T2,cross2,T1e2);
+			i3.T1valid = false;
+			i3.T2valid = true;
+
+			TriangleIntersection i4(T1,T2,cross2,T2.v[theT2PointinT1]);
+			i4.T1valid = true;
+			i4.T2valid = false;
+
+			TriangleIntersection i5(T1,T2,cross1,T2.v[theT2PointinT1]);
+			i5.T1valid = true;
+			i5.T2valid = false;
+
+			ret.push_back(i1);
+			ret.push_back(i2);
+			ret.push_back(i3);
+			ret.push_back(i4);
+			ret.push_back(i5);
+			return ret;
+		}//if(1 == T2inT1Count)
+		else
+			DEBUGBREAK
+	}//if(2 == T1inT2Count)
+	else
+		DEBUGBREAK
+
+}
 
 static Intersections IntersectWith(CKContext* context,Triangle T1,Triangle T2){
 		VxVector resultPt1;
@@ -196,7 +631,7 @@ static Intersections IntersectWith(CKContext* context,Triangle T1,Triangle T2){
 			if(!OnSamePlane){
 				return Intersections();
 			}else{
-				return Intersections();
+				return IntersectInplane(context,T1,T2);
 			}
 		}
 
@@ -409,10 +844,6 @@ static Intersections IntersectWith(CKContext* context,Triangle T1,Triangle T2){
 		//float pv0T1 = VxVectorInnerProduct(D,this.v[0]);
 
 	}
-
-static Intersections IntersectInplane(CKContext* context,Triangle T2){
-		
-}
 
 
 #endif
