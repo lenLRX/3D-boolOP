@@ -236,40 +236,37 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(CKMesh* mesh1,CKMe
 
 			//TODO:check if it is in triangle
 
-			VxVector Result1,Result2;
-			if(T1.IntersectWith(context,T2,Result1,Result2)){
-				IntersectionCount++;
-				TriangleIntersection result(T1,T2,Result1,Result2);
+			Intersections intersections = IntersectWith(context,T1,T2);
+			if(intersections.size()){
+				IntersectionCount += intersections.size();
+				
+				for(size_t idx = 0;idx < intersections.size();idx++){
+					PointInTriangle p1(T1,intersections[idx].V1);
+					if(!p1.valid()){
+						__ShowVxVector(context,p1.pointInTriangle);
+						DEBUGBREAK
+					}
 
-				PointInTriangle p1(T1,Result1);
-				if(!p1.valid()){
-					__ShowVxVector(context,p1.pointInTriangle);
-					DEBUGBREAK
+					PointInTriangle p2(T1,intersections[idx].V2);
+					if(!p2.valid()){
+						__ShowVxVector(context,p2.pointInTriangle);
+						DEBUGBREAK
+					}
+
+					PointInTriangle p3(T2,intersections[idx].V1);
+					if(!p3.valid()){
+						__ShowVxVector(context,p3.pointInTriangle);
+						DEBUGBREAK
+					}
+
+					PointInTriangle p4(T2,intersections[idx].V1);
+					if(!p4.valid()){
+						__ShowVxVector(context,p4.pointInTriangle);
+						DEBUGBREAK
+					}
+
+					results.push_back(intersections[idx]);
 				}
-
-				PointInTriangle p2(T1,Result2);
-				if(!p2.valid()){
-					__ShowVxVector(context,p2.pointInTriangle);
-					DEBUGBREAK
-				}
-
-				PointInTriangle p3(T2,Result1);
-				if(!p3.valid()){
-					__ShowVxVector(context,p3.pointInTriangle);
-					DEBUGBREAK
-				}
-
-				PointInTriangle p4(T2,Result2);
-				if(!p4.valid()){
-					__ShowVxVector(context,p4.pointInTriangle);
-					DEBUGBREAK
-				}
-
-
-
-				results.push_back(result);
-				//context->OutputToConsoleEx("Result1: %f,%f,%f",Result1.x,Result1.y,Result1.z);
-				//context->OutputToConsoleEx("Result2: %f,%f,%f",Result2.x,Result2.y,Result2.z);
 			}
 		}
 	}

@@ -2,6 +2,7 @@
 #define __TRIANGLE_H__
 
 #include <algorithm>
+#include <vector>
 #include "CKAll.h"
 
 #include "Plane.h"
@@ -48,213 +49,7 @@ public:
         _w = _w / VxVectorInnerProduct(V01,_w);
 	}
 
-	bool IntersectWith(CKContext* context,Triangle T2, VxVector& resultPt1 = VxVector(),VxVector& resultPt2 = VxVector()){
-		//All vertices of this triangle is on one side of T2
-		VxVector N2 = VxVectorCrossProduct(T2.v[1] - T2.v[0],T2.v[2] - T2.v[0]);
-		float d2 = - VxVectorInnerProduct(N2,T2.v[0]);
-		float d2v[3];
-		for(int i = 0;i < 3;i++){
-			d2v[i] = VxVectorInnerProduct(N2,this->v[i]) + d2;
-		}
 
-		bool d2AllNeg = d2v[0] < 0 && d2v[1] <0 && d2v[2] < 0;
-		bool d2AllPos = d2v[0] > 0 && d2v[1] >0 && d2v[2] > 0;
-
-		if(d2AllNeg || d2AllPos)
-			return false;
-
-		VxVector N1 = VxVectorCrossProduct(this->v[1] - this->v[0],this->v[2] - this->v[0]);
-		float d1 = - VxVectorInnerProduct(N1,this->v[0]);
-		float d1v[3];
-		for(int i = 0;i < 3;i++){
-			d1v[i] = VxVectorInnerProduct(N1,T2.v[i]) + d1;
-		}
-
-		bool d1AllNeg = d1v[0] < 0 && d1v[1] <0 && d1v[2] < 0;
-		bool d1AllPos = d1v[0] > 0 && d1v[1] >0 && d1v[2] > 0;
-
-		if(d1AllNeg || d1AllPos)
-			return false;
-
-		VxVector D = VxVectorCrossProduct(N1,N2);
-
-		int T1indexTrans[3];//T1index tranformation
-
-		if(d2v[0] * d2v[1] > 0)//T1 v0,v1 on one side
-		{
-			T1indexTrans[0] = 0;
-			T1indexTrans[1] = 2;
-			T1indexTrans[2] = 1;
-			//context->OutputToConsoleEx("T1 v0,v1 on one side");
-		}
-		else if(d2v[0] * d2v[2] > 0)//T1 v0,v2 on one side
-		{
-			T1indexTrans[0] = 0;
-			T1indexTrans[1] = 1;
-			T1indexTrans[2] = 2;
-			//context->OutputToConsoleEx("T1 v0,v2 on one side");
-		}
-		else//T1 v1,v2 on one side
-		{
-			T1indexTrans[0] = 1;
-			T1indexTrans[1] = 0;
-			T1indexTrans[2] = 2;
-			//context->OutputToConsoleEx("T1 v1,v2 on one side");
-		}
-
-		float pvT1[3];
-
-		for(int i = 0;i < 3;i++){
-			pvT1[T1indexTrans[i]] = VxVectorInnerProduct(D,this->v[T1indexTrans[i]]);
-		}
-
-		//T1
-
-		float t1 = pvT1[T1indexTrans[0]] + 
-			(pvT1[T1indexTrans[1]] - pvT1[T1indexTrans[0]]) * d2v[T1indexTrans[0]]/(d2v[T1indexTrans[0]] - d2v[T1indexTrans[1]]);
-
-		float t2 = pvT1[T1indexTrans[2]] + 
-			(pvT1[T1indexTrans[1]] - pvT1[T1indexTrans[2]]) * d2v[T1indexTrans[2]]/(d2v[T1indexTrans[2]] - d2v[T1indexTrans[1]]);
-
-		if(t1 == t2)
-			return false;
-
-		if(t1 > t2)
-		{
-			std::swap(t1,t2);
-			std::swap(T1indexTrans[0],T1indexTrans[2]);
-			//context->OutputToConsoleEx("swap 12");
-		}
-			
-
-		int T2indexTrans[3];//T1index tranformation
-
-		if(d1v[0] * d1v[1] > 0)//T2 v0,v1 on one side
-		{
-			T2indexTrans[0] = 0;
-			T2indexTrans[1] = 2;
-			T2indexTrans[2] = 1;
-			//context->OutputToConsoleEx("T2 v0,v1 on one side");
-		}
-		else if(d1v[0] * d1v[2] > 0)//T2 v0,v2 on one side
-		{
-			T2indexTrans[0] = 0;
-			T2indexTrans[1] = 1;
-			T2indexTrans[2] = 2;
-			//context->OutputToConsoleEx("T2 v0,v2 on one side");
-		}
-		else//T2 v1,v2 on one side
-		{
-			T2indexTrans[0] = 1;
-			T2indexTrans[1] = 0;
-			T2indexTrans[2] = 2;
-			//context->OutputToConsoleEx("T2 v1,v2 on one side");
-		}
-
-		float pvT2[3];
-
-		for(int i = 0;i < 3;i++){
-			pvT2[T2indexTrans[i]] = VxVectorInnerProduct(D,T2.v[T2indexTrans[i]]);
-		}
-
-		float t3 = pvT2[T2indexTrans[0]] + 
-			(pvT2[T2indexTrans[1]] - pvT2[T2indexTrans[0]]) * d1v[T2indexTrans[0]]/(d1v[T2indexTrans[0]] - d1v[T2indexTrans[1]]);
-
-		float t4 = pvT2[T2indexTrans[2]] + 
-			(pvT2[T2indexTrans[1]] - pvT2[T2indexTrans[2]]) * d1v[T2indexTrans[2]]/(d1v[T2indexTrans[2]] - d1v[T2indexTrans[1]]);
-
-		if(t3 == t4)
-			return false;
-
-		if(t3 > t4)
-		{
-			std::swap(t3,t4);
-			std::swap(T2indexTrans[0],T2indexTrans[2]);
-			//context->OutputToConsoleEx("swap 34");
-		}
-			
-
-		if(t1 >= t4)// t3----t4....t1----t2 reject!
-			return false;
-
-		if(t3 >= t2)// t1----t2....t3----t4 reject!
-			return false;
-
-		if(t1 < t3){//t1----t3
-			//t2<t3:we had proved above
-			if(t2 > t4){//t1---t3--t4---t2
-				//so the overlap part is t3---t4
-				if(!this->VxVevtorIntersectTriangle(T2.v[T2indexTrans[0]],
-					T2.v[T2indexTrans[1]] - T2.v[T2indexTrans[0]],resultPt1))
-					return false;
-				if(!this->VxVevtorIntersectTriangle(T2.v[T2indexTrans[2]],
-					T2.v[T2indexTrans[1]] - T2.v[T2indexTrans[2]],resultPt2))
-					return false;
-				if(SameVertex(resultPt1,resultPt2))
-					return false;
-				//context->OutputToConsoleEx("type 1");
-				return true;
-			}
-			else{//t1---t3---t2--t4
-				//so the overlap part is t3---t2
-				if(!this->VxVevtorIntersectTriangle(T2.v[T2indexTrans[0]],
-					T2.v[T2indexTrans[1]] - T2.v[T2indexTrans[0]],resultPt1))
-					return false;
-				if(!T2.VxVevtorIntersectTriangle(this->v[T1indexTrans[2]],
-					this->v[T1indexTrans[1]] - this->v[T1indexTrans[2]],resultPt2))
-					return false;
-				if(SameVertex(resultPt1,resultPt2))
-					return false;
-				//context->OutputToConsoleEx("type 2");
-				return true;
-			}
-		}else{//t3----t1
-			//t1<t4:we had proved above
-			if(t2>t4){//t3--t1---t4--t2
-				//so the overlap part is t1---t4
-				if(!T2.VxVevtorIntersectTriangle(this->v[T1indexTrans[0]],
-					this->v[T1indexTrans[1]] - this->v[T1indexTrans[0]],resultPt1))
-					return false;
-				if(!this->VxVevtorIntersectTriangle(T2.v[T2indexTrans[2]],
-					T2.v[T2indexTrans[1]] - T2.v[T2indexTrans[2]],resultPt2))
-					return false;
-				if(SameVertex(resultPt1,resultPt2))
-					return false;
-				//context->OutputToConsoleEx("type 3");
-				return true;
-			}else{//t3--t1---t2---t4
-				//so the overlap part is t1---t2
-				//T1V0 -> T2 -> T1V1
-				if(!T2.VxVevtorIntersectTriangle(this->v[T1indexTrans[0]],
-					this->v[T1indexTrans[1]] - this->v[T1indexTrans[0]],resultPt1)){
-					return false;
-					__ShowVxVector(context,resultPt1);
-					__ShowVxVector(context,this->v[T1indexTrans[0]]);
-					__ShowVxVector(context,this->v[T1indexTrans[1]]);
-					__ShowVxVector(context,this->v[T1indexTrans[2]]);
-					__ShowVxVector(context,this->v[T1indexTrans[1]] - this->v[T1indexTrans[0]]);
-					__ShowVxVector(context,T2.norm);
-					__ShowVxVector(context,T2.v[T2indexTrans[0]]);
-					__ShowVxVector(context,T2.v[T2indexTrans[1]]);
-					__ShowVxVector(context,T2.v[T2indexTrans[2]]);
-					DEBUGBREAK
-					return false;
-					//DEBUGBREAK
-				}
-				if(!T2.VxVevtorIntersectTriangle(this->v[T1indexTrans[2]],
-					this->v[T1indexTrans[1]] - this->v[T1indexTrans[2]],resultPt2))
-					return false;//DEBUGBREAK
-				if(SameVertex(resultPt1,resultPt2))
-					return false;
-				//context->OutputToConsoleEx("type 4");
-				return true;
-			}
-		}
-
-
-		//float pv0T1 = VxVectorInnerProduct(D,this.v[0]);
-
-	}
 
 	//@param pt point that determines line
     //@param line direction of line
@@ -318,9 +113,12 @@ private:
 };
 
 struct TriangleIntersection{
-	TriangleIntersection(Triangle _T1,Triangle _T2,VxVector _V1,VxVector _V2):T1(_T1),T2(_T2),V1(_V1),V2(_V2){;}
+	TriangleIntersection(Triangle _T1,Triangle _T2,VxVector _V1,VxVector _V2):
+        T1(_T1),T2(_T2),V1(_V1),V2(_V2),T1valid(true),T2valid(true){;}
 	Triangle T1,T2;
 	VxVector V1,V2;
+	bool T1valid;
+	bool T2valid;
 };
 
 
@@ -359,5 +157,262 @@ public:
 	VxVector pointInTriangle;//¦ÁA + ¦ÂB + ¦ÃC A v[0] B v[1] C v[2]
 	int OnTheEdge;//-1: not on the edge,0:On BC 1:On AC 2:On AB
 };
+
+typedef std::vector<TriangleIntersection> Intersections;
+
+static Intersections IntersectWith(CKContext* context,Triangle T1,Triangle T2){
+		VxVector resultPt1;
+		VxVector resultPt2;
+
+		Intersections ret;
+
+		//All vertices of this triangle is on one side of T2
+		VxVector N2 = VxVectorCrossProduct(T2.v[1] - T2.v[0],T2.v[2] - T2.v[0]);
+		VxVector N1 = VxVectorCrossProduct(T1.v[1] - T1.v[0],T1.v[2] - T1.v[0]);
+
+		VxVector n1 = N1;
+		n1.Normalize();
+		VxVector n2 = N2;
+		n2.Normalize();
+
+
+		//check if two triangle parallels
+		if(SameVertex(n1,n2) || SameVertex(n1,-n2)){
+			bool OnSamePlane = false;
+			//check if they are on the same plane
+			for(int i = 0; i < 3;i++){
+				VxVector line = T1.v[0] - T2.v[i];
+				//check if two point is too close
+				if(line.SquareMagnitude() > 0.001f){
+					VxVector x = VxVectorCrossProduct(line,n1);
+					//check if line is on the plane
+					if(x.SquareMagnitude() < 0.0001f){
+						OnSamePlane = true;
+					}
+					break;
+				}
+			}
+
+			if(!OnSamePlane){
+				return Intersections();
+			}else{
+				return Intersections();
+			}
+		}
+
+
+
+		float d2 = - VxVectorInnerProduct(N2,T2.v[0]);
+		float d2v[3];
+		for(int i = 0;i < 3;i++){
+			d2v[i] = VxVectorInnerProduct(N2,T1.v[i]) + d2;
+		}
+
+		bool d2AllNeg = d2v[0] < 0 && d2v[1] <0 && d2v[2] < 0;
+		bool d2AllPos = d2v[0] > 0 && d2v[1] >0 && d2v[2] > 0;
+
+		if(d2AllNeg || d2AllPos)
+			return Intersections();
+
+		float d1 = - VxVectorInnerProduct(N1,T1.v[0]);
+		float d1v[3];
+		for(int i = 0;i < 3;i++){
+			d1v[i] = VxVectorInnerProduct(N1,T2.v[i]) + d1;
+		}
+
+		bool d1AllNeg = d1v[0] < 0 && d1v[1] <0 && d1v[2] < 0;
+		bool d1AllPos = d1v[0] > 0 && d1v[1] >0 && d1v[2] > 0;
+
+		if(d1AllNeg || d1AllPos)
+			return Intersections();
+
+		VxVector D = VxVectorCrossProduct(N1,N2);
+
+		int T1indexTrans[3];//T1index tranformation
+
+		if(d2v[0] * d2v[1] > 0)//T1 v0,v1 on one side
+		{
+			T1indexTrans[0] = 0;
+			T1indexTrans[1] = 2;
+			T1indexTrans[2] = 1;
+			//context->OutputToConsoleEx("T1 v0,v1 on one side");
+		}
+		else if(d2v[0] * d2v[2] > 0)//T1 v0,v2 on one side
+		{
+			T1indexTrans[0] = 0;
+			T1indexTrans[1] = 1;
+			T1indexTrans[2] = 2;
+			//context->OutputToConsoleEx("T1 v0,v2 on one side");
+		}
+		else//T1 v1,v2 on one side
+		{
+			T1indexTrans[0] = 1;
+			T1indexTrans[1] = 0;
+			T1indexTrans[2] = 2;
+			//context->OutputToConsoleEx("T1 v1,v2 on one side");
+		}
+
+		float pvT1[3];
+
+		for(int i = 0;i < 3;i++){
+			pvT1[T1indexTrans[i]] = VxVectorInnerProduct(D,T1.v[T1indexTrans[i]]);
+		}
+
+		//T1
+
+		float t1 = pvT1[T1indexTrans[0]] + 
+			(pvT1[T1indexTrans[1]] - pvT1[T1indexTrans[0]]) * d2v[T1indexTrans[0]]/(d2v[T1indexTrans[0]] - d2v[T1indexTrans[1]]);
+
+		float t2 = pvT1[T1indexTrans[2]] + 
+			(pvT1[T1indexTrans[1]] - pvT1[T1indexTrans[2]]) * d2v[T1indexTrans[2]]/(d2v[T1indexTrans[2]] - d2v[T1indexTrans[1]]);
+
+		if(t1 == t2)
+			return Intersections();
+
+		if(t1 > t2)
+		{
+			std::swap(t1,t2);
+			std::swap(T1indexTrans[0],T1indexTrans[2]);
+			//context->OutputToConsoleEx("swap 12");
+		}
+			
+
+		int T2indexTrans[3];//T1index tranformation
+
+		if(d1v[0] * d1v[1] > 0)//T2 v0,v1 on one side
+		{
+			T2indexTrans[0] = 0;
+			T2indexTrans[1] = 2;
+			T2indexTrans[2] = 1;
+			//context->OutputToConsoleEx("T2 v0,v1 on one side");
+		}
+		else if(d1v[0] * d1v[2] > 0)//T2 v0,v2 on one side
+		{
+			T2indexTrans[0] = 0;
+			T2indexTrans[1] = 1;
+			T2indexTrans[2] = 2;
+			//context->OutputToConsoleEx("T2 v0,v2 on one side");
+		}
+		else//T2 v1,v2 on one side
+		{
+			T2indexTrans[0] = 1;
+			T2indexTrans[1] = 0;
+			T2indexTrans[2] = 2;
+			//context->OutputToConsoleEx("T2 v1,v2 on one side");
+		}
+
+		float pvT2[3];
+
+		for(int i = 0;i < 3;i++){
+			pvT2[T2indexTrans[i]] = VxVectorInnerProduct(D,T2.v[T2indexTrans[i]]);
+		}
+
+		float t3 = pvT2[T2indexTrans[0]] + 
+			(pvT2[T2indexTrans[1]] - pvT2[T2indexTrans[0]]) * d1v[T2indexTrans[0]]/(d1v[T2indexTrans[0]] - d1v[T2indexTrans[1]]);
+
+		float t4 = pvT2[T2indexTrans[2]] + 
+			(pvT2[T2indexTrans[1]] - pvT2[T2indexTrans[2]]) * d1v[T2indexTrans[2]]/(d1v[T2indexTrans[2]] - d1v[T2indexTrans[1]]);
+
+		if(t3 == t4)
+			return Intersections();
+
+		if(t3 > t4)
+		{
+			std::swap(t3,t4);
+			std::swap(T2indexTrans[0],T2indexTrans[2]);
+			//context->OutputToConsoleEx("swap 34");
+		}
+			
+
+		if(t1 >= t4)// t3----t4....t1----t2 reject!
+			return Intersections();
+
+		if(t3 >= t2)// t1----t2....t3----t4 reject!
+			return Intersections();
+
+		if(t1 < t3){//t1----t3
+			//t2<t3:we had proved above
+			if(t2 > t4){//t1---t3--t4---t2
+				//so the overlap part is t3---t4
+				if(!T1.VxVevtorIntersectTriangle(T2.v[T2indexTrans[0]],
+					T2.v[T2indexTrans[1]] - T2.v[T2indexTrans[0]],resultPt1))
+					return Intersections();
+				if(!T1.VxVevtorIntersectTriangle(T2.v[T2indexTrans[2]],
+					T2.v[T2indexTrans[1]] - T2.v[T2indexTrans[2]],resultPt2))
+					return Intersections();
+				if(SameVertex(resultPt1,resultPt2))
+					return Intersections();
+				//context->OutputToConsoleEx("type 1");
+				ret.push_back(TriangleIntersection(T1,T2,resultPt1,resultPt2));
+				return ret;
+			}
+			else{//t1---t3---t2--t4
+				//so the overlap part is t3---t2
+				if(!T1.VxVevtorIntersectTriangle(T2.v[T2indexTrans[0]],
+					T2.v[T2indexTrans[1]] - T2.v[T2indexTrans[0]],resultPt1))
+					return Intersections();
+				if(!T2.VxVevtorIntersectTriangle(T1.v[T1indexTrans[2]],
+					T1.v[T1indexTrans[1]] - T1.v[T1indexTrans[2]],resultPt2))
+					return Intersections();
+				if(SameVertex(resultPt1,resultPt2))
+					return Intersections();
+				//context->OutputToConsoleEx("type 2");
+				ret.push_back(TriangleIntersection(T1,T2,resultPt1,resultPt2));
+				return ret;
+			}
+		}else{//t3----t1
+			//t1<t4:we had proved above
+			if(t2>t4){//t3--t1---t4--t2
+				//so the overlap part is t1---t4
+				if(!T2.VxVevtorIntersectTriangle(T1.v[T1indexTrans[0]],
+					T1.v[T1indexTrans[1]] - T1.v[T1indexTrans[0]],resultPt1))
+					return Intersections();
+				if(!T1.VxVevtorIntersectTriangle(T2.v[T2indexTrans[2]],
+					T2.v[T2indexTrans[1]] - T2.v[T2indexTrans[2]],resultPt2))
+					return Intersections();
+				if(SameVertex(resultPt1,resultPt2))
+					return Intersections();
+				//context->OutputToConsoleEx("type 3");
+				ret.push_back(TriangleIntersection(T1,T2,resultPt1,resultPt2));
+				return ret;
+			}else{//t3--t1---t2---t4
+				//so the overlap part is t1---t2
+				//T1V0 -> T2 -> T1V1
+				if(!T2.VxVevtorIntersectTriangle(T1.v[T1indexTrans[0]],
+					T1.v[T1indexTrans[1]] - T1.v[T1indexTrans[0]],resultPt1)){
+					return Intersections();
+					__ShowVxVector(context,resultPt1);
+					__ShowVxVector(context,T1.v[T1indexTrans[0]]);
+					__ShowVxVector(context,T1.v[T1indexTrans[1]]);
+					__ShowVxVector(context,T1.v[T1indexTrans[2]]);
+					__ShowVxVector(context,T1.v[T1indexTrans[1]] - T1.v[T1indexTrans[0]]);
+					__ShowVxVector(context,T2.norm);
+					__ShowVxVector(context,T2.v[T2indexTrans[0]]);
+					__ShowVxVector(context,T2.v[T2indexTrans[1]]);
+					__ShowVxVector(context,T2.v[T2indexTrans[2]]);
+					DEBUGBREAK
+					return Intersections();
+					//DEBUGBREAK
+				}
+				if(!T2.VxVevtorIntersectTriangle(T1.v[T1indexTrans[2]],
+					T1.v[T1indexTrans[1]] - T1.v[T1indexTrans[2]],resultPt2))
+					return Intersections();//DEBUGBREAK
+				if(SameVertex(resultPt1,resultPt2))
+					return Intersections();
+				//context->OutputToConsoleEx("type 4");
+				ret.push_back(TriangleIntersection(T1,T2,resultPt1,resultPt2));
+				return ret;
+			}
+		}
+
+
+		//float pv0T1 = VxVectorInnerProduct(D,this.v[0]);
+
+	}
+
+static Intersections IntersectInplane(CKContext* context,Triangle T2){
+		
+}
+
 
 #endif
