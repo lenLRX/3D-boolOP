@@ -79,43 +79,31 @@ public:
 		}
 	}
 
-	bool RayIntersectTest(VxVector pt,VxVector line,int flag,VxVector& ret){
+	bool RayIntersectTest(VxVector pt,VxVector line,bool& onThePlane,bool& isParallel,VxVector& ret){
 		float dotP = VxVectorInnerProduct(line,norm);
-		if(dotP == 0.0f){
-			/*
-			float d = - VxVectorInnerProduct(norm , point);
-			float dis = VxVectorInnerProduct(norm , pt) + d;
-			float direction = 
-			if(dis < 0 - 0.001){
-				throw "dis < 0 - 0.001";
-			    return false;
-			}else{
-				ret = pt - dis * norm;
+		if(fabs(dotP) < 0.01){
+			//throw std::string("RayIntersectTest  ") + std::string(__FILE__);
+			//onThePlane = true;
+			if(fabs(VxVectorInnerProduct(point - pt,norm)) < 0.01){
+			    isParallel = true;
+				ret = pt;
 				return true;
 			}
-			*/
 			return false;
 		}
 		else{
 			float t = VxVectorInnerProduct(point - pt,norm)/dotP;
-			if(flag == 1){
-				if(t> 0){
-					ret = pt + (t * line);
-					return true;
-				}
-				else{
-					ret = pt + (t * line);
-					return false;
-				}
-			}else{
-				if(t> -0.05){
-					ret = pt + (t * line);
-					return true;
-				}
-				else{
-					ret = pt + (t * line);
-					return false;
-				}
+			if(fabs(t) < 0.01){
+				onThePlane = true;
+				ret = pt + (t * line);
+			    return true;
+			}else if(t> 0){
+				ret = pt + (t * line);
+				return true;
+			}
+			else{
+				ret = pt + (t * line);
+				return false;
 			}
 		}
 	}

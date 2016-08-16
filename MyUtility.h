@@ -109,7 +109,7 @@ static void ShowVxVector(CKContext* context,const VxVector& v){
 // in range [lb,ub]
 static bool InTheRange(float lb,float ub,float value){
 	if(lb > ub)
-		throw std::string("lower bound must be greater than upper bound!");
+		throw std::exception("lower bound must be greater than upper bound!");
 	if(value < lb)
 		return false;
 	else if(value > ub)
@@ -118,7 +118,7 @@ static bool InTheRange(float lb,float ub,float value){
 		return true;
 }
 
-#define DEBUGBREAK {context->OutputToConsoleEx("%s , %d",__FILE__,__LINE__);throw std::string("break");}
+#define DEBUGBREAK {context->OutputToConsoleEx("%s , %d",__FILE__,__LINE__);throw std::exception("break");}
 
 //bool VxVevtorIntersect
 

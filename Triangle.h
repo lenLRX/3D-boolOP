@@ -22,6 +22,12 @@ static void __ShowVxVector(CKContext* context,const VxVector& v){
 	//context->OutputToConsoleEx("x: %f,y: %f,z %f",v.x,v.y,v.z);
 }
 
+enum InclusionRelation{
+	Out = 0,
+	In = 1,
+	OnTheFace = 2
+};
+
 class Triangle
 {
 public:
@@ -72,15 +78,19 @@ public:
 
 	}
 
-	bool VxVevtorIntersectTriangle(VxVector pt,VxVector line,int flag,VxVector& IntersectionPoint = VxVector(1,1,1)){
-		if(plane.RayIntersectTest(pt,line,flag,IntersectionPoint)){
+	bool VxVevtorIntersectTriangle(VxVector pt,VxVector line,bool& onThePlane,bool& isParallel,VxVector& IntersectionPoint = VxVector(1,1,1)){
+		bool _onThePlane = false;
+		bool _parallel = false;
+		if(plane.RayIntersectTest(pt,line,_onThePlane,_parallel,IntersectionPoint)){
 			VxVector AP = IntersectionPoint - v[0];
 			float gamma = VxVectorInnerProduct(AP, _v);
-			if(gamma >= 0 - 0.001 && gamma <= 1 + 0.001) {
+			if(gamma >= 0 && gamma <= 1) {
 				float beta = VxVectorInnerProduct(AP, _w);
-				if(beta >= 0 - 0.001 && beta <= 1 + 0.001) {
+				if(beta >= 0  && beta <= 1) {
                     float alpha = 1 - gamma - beta;
-					if(alpha >= 0 - 0.001 && alpha <=1 + 0.001){
+					if(alpha >= 0  && alpha <=1 ){
+						onThePlane = _onThePlane;
+						isParallel = _parallel;
 						return true;
 					}
                 }
@@ -148,7 +158,7 @@ public:
 
 	bool valid(){
 		for(int i = 0;i < 3;i++){
-			if(pointInTriangle.v[i] > 1.0f || pointInTriangle.v[i] < 0)
+			if(pointInTriangle.v[i] > 1.0f + 0.001 || pointInTriangle.v[i] < 0 - 0.001)
 				return false;
 		}
 		return true;
@@ -241,9 +251,11 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 				}
 			}//for
 
+			
 			TriangleIntersection i1(T1,T2,cross1,cross2);// in T2
 			i1.T1valid = false;
 			i1.T2valid = true;
+			
 
 			TriangleIntersection i2(T1,T2,cross1,T2origin);
 			i2.T1valid = true;
@@ -291,9 +303,11 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 				}
 			}//for
 
+			
 			TriangleIntersection i1(T1,T2,cross1,cross2);
 			i1.T1valid = false;
 			i1.T2valid = true;
+			
 
 			TriangleIntersection i2(T1,T2,T2e1,T2e2);
 			i2.T1valid = true;
@@ -364,6 +378,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 			i1.T1valid = true;
 			i1.T2valid = false;
 			
+			
 			TriangleIntersection i2(T1,T2,cross1,origin);
 			i2.T1valid = false;
 			i2.T2valid = true;
@@ -371,6 +386,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 			TriangleIntersection i3(T1,T2,cross2,origin);
 			i3.T1valid = false;
 			i3.T2valid = true;
+			
 
 			ret.push_back(i1);
 			ret.push_back(i2);
@@ -395,6 +411,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 			i2.T1valid = true;
 			i2.T2valid = false;
 
+			
 			TriangleIntersection i3(T1,T2,origin,cross1);
 			i3.T1valid = false;
 			i3.T2valid = true;
@@ -402,6 +419,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 			TriangleIntersection i4(T1,T2,origin,cross2);
 			i4.T1valid = false;
 			i4.T2valid = true;
+			
 
 			ret.push_back(i1);
 			ret.push_back(i2);
@@ -420,6 +438,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 
 			const VxVector& T2origin = T2.v[theT2PointNotinT1];
 
+			
 			TriangleIntersection i1(T1,T2,T2origin,cross1);
 			i1.T1valid = false;
 			i1.T2valid = true;
@@ -427,6 +446,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 			TriangleIntersection i2(T1,T2,T2origin,cross2);
 			i2.T1valid = false;
 			i2.T2valid = true;
+			
 
 			TriangleIntersection i3(T1,T2,T2.v[(theT2PointNotinT1 + 1) % 3],T2.v[(theT2PointNotinT1 + 2) % 3]);
 			i3.T1valid = true;
@@ -500,6 +520,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 			i1.T1valid = true;
 			i1.T2valid = false;
 
+			
 			TriangleIntersection i2(T1,T2,cross1,T1e1);
 			i2.T1valid = false;
 			i2.T2valid = true;
@@ -511,6 +532,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 			TriangleIntersection i4(T1,T2,T1e1,T1e2);
 			i4.T1valid = false;
 			i4.T2valid = true;
+			
 
 			ret.push_back(i1);
 			ret.push_back(i2);
@@ -560,6 +582,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 				}
 			}//for
 
+			
 			TriangleIntersection i1(T1,T2,cross1,cross2);
 			i1.T1valid = false;
 			i1.T2valid = true;
@@ -571,6 +594,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 			TriangleIntersection i3(T1,T2,cross2,T1e2);
 			i3.T1valid = false;
 			i3.T2valid = true;
+			
 
 			TriangleIntersection i4(T1,T2,cross2,T2.v[theT2PointinT1]);
 			i4.T1valid = true;
