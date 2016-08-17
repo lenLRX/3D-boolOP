@@ -211,7 +211,7 @@ public:
 				//context->OutputToConsoleEx("They are EnClosedChains");
 			}
 			else{
-				/*
+				
 				context->OutputToConsoleEx("size: %d", (int)it->Edges.size());
 				context->OutputToConsoleEx("origin E.v1(%f,%f,%f) E.v2(%f,%f,%f)",it->Edges.front().v1.point.v[0],
 							it->Edges.front().v1.point.v[1],it->Edges.front().v1.point.v[2],it->Edges.back().v2.point.v[0],
@@ -219,8 +219,36 @@ public:
 				context->OutputToConsoleEx("E.v1(%f,%f,%f) E.v2(%f,%f,%f)",it->Edges.front().v1.pointInTriangle.v[0],
 							it->Edges.front().v1.pointInTriangle.v[1],it->Edges.front().v1.pointInTriangle.v[2],it->Edges.back().v2.pointInTriangle.v[0],
 							it->Edges.back().v2.pointInTriangle.v[1],it->Edges.back().v2.pointInTriangle.v[2]);
-				*/
-				throw std::string("OnTheEdge must be both >= 0 or < 0 !!");
+				
+				//throw std::exception("OnTheEdge must be both >= 0 or < 0 !!");
+				float min1 = 1.5f;
+				float min2 = 1.5f;
+				for(int i = 0;i < 3;i++){
+					if(it->Edges.front().v1.pointInTriangle.v[i] < min1){
+						min1 = it->Edges.front().v1.pointInTriangle.v[i];
+						it->Edges.front().v1.OnTheEdge = i;
+					}
+
+					if(it->Edges.back().v2.pointInTriangle.v[i] < min2){
+						min2 = it->Edges.back().v2.pointInTriangle.v[i];
+						it->Edges.back().v2.OnTheEdge = i;
+					}
+				}
+
+				if(it->Edges.front().v1.OnTheEdge >= 0 && it->Edges.back().v2.OnTheEdge >= 0){
+					//both end on the Edge
+					if(it->Edges.front().v1.OnTheEdge == it->Edges.back().v2.OnTheEdge){
+						//They are on the same Edge
+						it->type = ChainsOnSameEdge;
+						it->additionalMsg = it->Edges.front().v1.OnTheEdge;
+						//context->OutputToConsoleEx("They are on the same Edge additionMsg %d",it->additionalMsg);
+					}
+					else{
+						it->type = ChainsOppositeToVertex;
+						it->additionalMsg = it->Edges.front().v1.OnTheEdge + it->Edges.back().v2.OnTheEdge;
+						//context->OutputToConsoleEx("They are not on the same Edge additionMsg %d",it->additionalMsg);
+					}
+				}
 			}
 			
 		}
