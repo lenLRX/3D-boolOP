@@ -65,7 +65,7 @@ CKERROR CreateGetAllVertexBuildingBlockProto(CKBehaviorPrototype** pproto)
 	return CK_OK;
 }
 
-InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,CKContext* context,VxVector direction = VxVector(-1,-1,-1),bool review = false){
+int PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,CKContext* context){
 
 	CKDWORD vStride=0;
 
@@ -76,9 +76,9 @@ InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,C
 	
 	const CKVINDEX* faceIndex = mesh->GetFacesIndices();
 
-	VxVector line = direction;
+	VxVector line = VxVector(-1,-1,-1);
 
-	//line = VxVector(-(float)(rand() + 1)/(float)RAND_MAX,-(float)(rand() + 1)/(float)RAND_MAX,-(float)(rand() + 1)/(float)RAND_MAX);
+	line = VxVector(-(float)(rand() + 1)/(float)RAND_MAX,-(float)(rand() + 1)/(float)RAND_MAX,-(float)(rand() + 1)/(float)RAND_MAX);
 
 	//context->OutputToConsoleEx("line: %f,%f,%f",line.x,line.y,line.z);
 
@@ -114,17 +114,12 @@ InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,C
 
 		VxVector intersectionPoint;
 
-		bool onThePlane = false;
-		bool isParallel = false;
-		bool b = triangle.VxVevtorIntersectTriangle(pt,line,onThePlane,isParallel,intersectionPoint);
+		
+		
+		
 
-		if(onThePlane && !review)
-			return OnTheFace;
+		bool b = triangle.VxVevtorIntersectTriangle(pt,line,flag,intersectionPoint);
 
-		if(isParallel && b){
-			return OnTheFace;
-		}
-		/*
 		if(b){
 			//context->OutputToConsoleEx("intersectionPoint: %f,%f,%f",
 			//	intersectionPoint.x,intersectionPoint.y,intersectionPoint.z);
@@ -135,21 +130,18 @@ InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,C
 				IntersectionPointSet.insert(intersectionPoint);
 			}
 		}
-		*/
 		
 
-		if(b && !onThePlane && !isParallel){
+		if(b){
 			IntersectionCount++;
 	    }
 	}
 
-	if(IntersectionCount % 2 == 1)
-		return In;
-	else
-		return Out;
+	
+	return IntersectionCount;
 }
 
-std::vector<InclusionRelation> Mesh1PointsInMesh2(CKMesh* mesh1,CKMesh* mesh2,VxVector displacement,VxVector scale1,VxVector scale2,int flag,CKContext* context){
+std::pair<std::vector<int>,std::vector<bool> > Mesh1PointsInMesh2(CKMesh* mesh1,CKMesh* mesh2,VxVector displacement,VxVector scale1,VxVector scale2,int flag,CKContext* context){
 	CKDWORD Mesh1vStride=0;
 	CKDWORD Mesh2vStride=0;
 	const BYTE* Mesh1Vertices = (BYTE*)mesh1->GetModifierVertices(&Mesh1vStride);
@@ -157,7 +149,7 @@ std::vector<InclusionRelation> Mesh1PointsInMesh2(CKMesh* mesh1,CKMesh* mesh2,Vx
 	int Mesh1VCount = mesh1->GetModifierVertexCount();
 	int Mesh2VCount = mesh2->GetModifierVertexCount();
 
-	std::vector<InclusionRelation> ret;
+	std::pair<std::vector<int>,std::vector<bool> > ret;
 	int count = 0;
 	
 	
@@ -170,7 +162,14 @@ std::vector<InclusionRelation> Mesh1PointsInMesh2(CKMesh* mesh1,CKMesh* mesh2,Vx
 
 		TransformedPos += displacement;
 
-		ret.push_back(PointInBody(TransformedPos,scale2,mesh2,flag,context));
+		int IntersectionCount = PointInBody(TransformedPos,scale2,mesh2,flag,context);
+
+		if(IntersectionCount % 2 == 1){
+			ret.first.push_back(i);
+			ret.second.push_back(true);
+		}
+		else
+			ret.second.push_back(false);
 	}
 	
 
@@ -242,31 +241,29 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(CKMesh* mesh1,CKMe
 				IntersectionCount += intersections.size();
 				
 				for(size_t idx = 0;idx < intersections.size();idx++){
-					/*
 					PointInTriangle p1(T1,intersections[idx].V1);
 					if(!p1.valid()){
-						context->OutputToConsoleEx("x: %f,y: %f,z %f",p1.pointInTriangle.x,p1.pointInTriangle.y,p1.pointInTriangle.z);
+						__ShowVxVector(context,p1.pointInTriangle);
 						DEBUGBREAK
 					}
 
 					PointInTriangle p2(T1,intersections[idx].V2);
 					if(!p2.valid()){
-						context->OutputToConsoleEx("x: %f,y: %f,z %f",p2.pointInTriangle.x,p2.pointInTriangle.y,p2.pointInTriangle.z);
+						__ShowVxVector(context,p2.pointInTriangle);
 						DEBUGBREAK
 					}
 
 					PointInTriangle p3(T2,intersections[idx].V1);
 					if(!p3.valid()){
-						context->OutputToConsoleEx("x: %f,y: %f,z %f",p3.pointInTriangle.x,p3.pointInTriangle.y,p3.pointInTriangle.z);
+						__ShowVxVector(context,p3.pointInTriangle);
 						DEBUGBREAK
 					}
 
 					PointInTriangle p4(T2,intersections[idx].V1);
 					if(!p4.valid()){
-						context->OutputToConsoleEx("x: %f,y: %f,z %f",p4.pointInTriangle.x,p4.pointInTriangle.y,p4.pointInTriangle.z);
+						__ShowVxVector(context,p4.pointInTriangle);
 						DEBUGBREAK
 					}
-					*/
 
 					results.push_back(intersections[idx]);
 				}
@@ -279,16 +276,14 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(CKMesh* mesh1,CKMe
 void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 					 VxVector displacement,VxVector scale1,VxVector scale2,CKContext* context){
     srand(time(NULL));
-    std::vector<InclusionRelation> Mesh1InMesh2 = Mesh1PointsInMesh2(mesh1,mesh2,-displacement,scale1,scale2,1,context);
-    std::vector<InclusionRelation> Mesh2InMesh1 = Mesh1PointsInMesh2(mesh2,mesh1, displacement,scale2,scale1,-1,context);
+    std::pair<std::vector<int>,std::vector<bool> > Mesh1InMesh2 = Mesh1PointsInMesh2(mesh1,mesh2,-displacement,scale1,scale2,1,context);
+    std::pair<std::vector<int>,std::vector<bool> > Mesh2InMesh1 = Mesh1PointsInMesh2(mesh2,mesh1, displacement,scale2,scale1,-1,context);
 
-	/*
 	size_t s = Mesh2InMesh1.second.size();
 	for(size_t i = 0;i < s;i++){
 		// visibility is inverse for Mesh2InMesh1
 		Mesh2InMesh1.second[i] = !Mesh2InMesh1.second[i];
 	}
-	*/
 
 	CKDWORD Mesh1vStride=0;
 	CKDWORD Mesh2vStride=0;
@@ -305,6 +300,32 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 
 	size_t IntersectionSize = TriangleIntersections.size();
 
+	std::vector<VxVector> NewVertices;
+	int NewVerticesIndex = 0;
+	std::map<VxVector,int,VxVectorLess> VxVector2Index;
+
+	for(int i = 0 ; i < Mesh1VCount; i++){
+		if(Mesh1InMesh2.second[i] == false){
+			VxVector temp(*((VxVector*)(Mesh1Vertices + i * Mesh1vStride)));
+			if(VxVector2Index.find(temp) == VxVector2Index.end()){
+				NewVertices.push_back(temp);
+			    VxVector2Index[temp] = NewVerticesIndex;
+			    NewVerticesIndex++;
+			}
+		}
+	}
+
+	for(int i = 0 ; i < Mesh2VCount; i++){
+		if(Mesh2InMesh1.second[i] == true){
+			VxVector temp(*((VxVector*)(Mesh2Vertices + i * Mesh2vStride)));
+			if(VxVector2Index.find(temp) == VxVector2Index.end()){
+				NewVertices.push_back(temp);
+			    VxVector2Index[temp] = NewVerticesIndex;
+			    NewVerticesIndex++;
+			}
+		}
+	}
+
 	std::vector<bool> Mesh1TriangleMarks(Mesh1FaceCount,false);
 	std::vector<bool> Mesh2TriangleMarks(Mesh2FaceCount,false);
 
@@ -319,111 +340,55 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 		TriangleIntersection& TI = TriangleIntersections[i];
 		Mesh1TriangleMarks[TI.T1.faceIndex] = true;
 		Mesh2TriangleMarks[TI.T2.faceIndex] = true;
+		if(VxVector2Index.find(TI.V1) == VxVector2Index.end()){
+		    NewVertices.push_back(TI.V1);
+			VxVector2Index[TI.V1] = NewVerticesIndex;
+			NewVerticesIndex++;
+		}
+
+		if(VxVector2Index.find(TI.V2) == VxVector2Index.end()){
+		    NewVertices.push_back(TI.V2);
+			VxVector2Index[TI.V2] = NewVerticesIndex;
+			NewVerticesIndex++;
+		}
+
+		T1Polygons[TI.T1.faceIndex].triangle = TI.T1;
+
+		T1Triangles.insert(TI.T1.faceIndex);
+
+		for(int j = 0; j < 3;j++){
+			T1Polygons[TI.T1.faceIndex].triangle.visible[j]
+			= !Mesh1InMesh2.second[*(faceIndex1 + 3 * TI.T1.faceIndex + j)];
+		}
 
 		Edge E;
 
-		if(TI.T1valid){
-			T1Polygons[TI.T1.faceIndex].triangle = TI.T1;
+		E.v1 = PointInTriangle(TI.T1,TI.V1);
+		E.v2 = PointInTriangle(TI.T1,TI.V2);
 
-			T1Triangles.insert(TI.T1.faceIndex);
+		T1Polygons[TI.T1.faceIndex].Edges.push_back(E);
 
-			for(int j = 0; j < 3;j++){
-				switch(Mesh1InMesh2[*(faceIndex1 + 3 * TI.T1.faceIndex + j)]){
-					case In:
-						T1Polygons[TI.T1.faceIndex].triangle.visible[j] = false;
-						break;
-					case Out:
-						T1Polygons[TI.T1.faceIndex].triangle.visible[j] = true;
-						break;
-					case OnTheFace:
-						InclusionRelation ir1 = PointInBody(T1Polygons[TI.T1.faceIndex].triangle.v[j],
-							VxVector(1.0f,1.0f,1.0f),mesh2,1,context,
-							T1Polygons[TI.T1.faceIndex].triangle.v[(j + 1) % 3 ] - T1Polygons[TI.T1.faceIndex].triangle.v[j],true);
-						InclusionRelation ir2 = PointInBody(T1Polygons[TI.T1.faceIndex].triangle.v[j],
-							VxVector(1.0f,1.0f,1.0f),mesh2,1,context,
-							T1Polygons[TI.T1.faceIndex].triangle.v[(j + 2) % 3 ] - T1Polygons[TI.T1.faceIndex].triangle.v[j],true);
-						if(OnTheFace == ir1 && OnTheFace == ir2){
-							T1Polygons[TI.T1.faceIndex].triangle.visible[j] = false;
-							//Mesh1InMesh2[*(faceIndex1 + 3 * TI.T1.faceIndex + j)] = Out;
-						}
-						if(In == ir1 || In == ir2){
-							T1Polygons[TI.T1.faceIndex].triangle.visible[j] = false;
-							//Mesh1InMesh2[*(faceIndex1 + 3 * TI.T1.faceIndex + j)] = In;
-						}else{
-							T1Polygons[TI.T1.faceIndex].triangle.visible[j] = false;
-							//Mesh1InMesh2[*(faceIndex1 + 3 * TI.T1.faceIndex + j)] = Out;
-						}
-						break;
-				}
-				/*
-				T1Polygons[TI.T1.faceIndex].triangle.visible[j]
-				= !Mesh1InMesh2[*(faceIndex1 + 3 * TI.T1.faceIndex + j)];
-				*/
-			}
 
-			E.v1 = PointInTriangle(TI.T1,TI.V1);
-			E.v2 = PointInTriangle(TI.T1,TI.V2);
+		T2Polygons[TI.T2.faceIndex].triangle = TI.T2;
 
-			T1Polygons[TI.T1.faceIndex].Edges.push_back(E);
+		T2Triangles.insert(TI.T2.faceIndex);
+
+		for(int j = 0; j < 3;j++){
+			T2Polygons[TI.T2.faceIndex].triangle.visible[j] 
+			= !Mesh2InMesh1.second[*(faceIndex2 + 3 * TI.T2.faceIndex + j)];
 		}
+		
+		E.v1 = PointInTriangle(TI.T2,TI.V1);
+		E.v2 = PointInTriangle(TI.T2,TI.V2);
 
-		if(TI.T2valid){
-
-			T2Polygons[TI.T2.faceIndex].triangle = TI.T2;
-
-			T2Triangles.insert(TI.T2.faceIndex);
-
-			for(int j = 0; j < 3;j++){
-				switch(Mesh2InMesh1[*(faceIndex2 + 3 * TI.T2.faceIndex + j)]){
-					case Out:
-						T2Polygons[TI.T2.faceIndex].triangle.visible[j] = false;
-						break;
-					case In:
-						T2Polygons[TI.T2.faceIndex].triangle.visible[j] = true;
-						break;
-					case OnTheFace:
-						InclusionRelation ir1 = PointInBody(T2Polygons[TI.T2.faceIndex].triangle.v[j],
-							VxVector(1.0f,1.0f,1.0f),mesh1,1,context,
-							T2Polygons[TI.T2.faceIndex].triangle.v[(j + 1) % 3 ] - T2Polygons[TI.T2.faceIndex].triangle.v[j],true);
-						InclusionRelation ir2 = PointInBody(T2Polygons[TI.T2.faceIndex].triangle.v[j],
-							VxVector(1.0f,1.0f,1.0f),mesh1,1,context,
-							T2Polygons[TI.T2.faceIndex].triangle.v[(j + 2) % 3 ] - T2Polygons[TI.T2.faceIndex].triangle.v[j],true);
-						if(OnTheFace == ir1 && OnTheFace == ir2){
-							T2Polygons[TI.T2.faceIndex].triangle.visible[j] = false;
-							//Mesh2InMesh1[*(faceIndex2 + 3 * TI.T2.faceIndex + j)] = Out;
-						}
-						else if(Out == ir1 || Out == ir2){
-							T2Polygons[TI.T2.faceIndex].triangle.visible[j] = true;
-							//Mesh2InMesh1[*(faceIndex2 + 3 * TI.T2.faceIndex + j)] = Out;
-						}else{
-							T2Polygons[TI.T2.faceIndex].triangle.visible[j] = true;
-							//Mesh2InMesh1[*(faceIndex2 + 3 * TI.T2.faceIndex + j)] = In;
-						}
-						break;
-				}
-				/*
-				T2Polygons[TI.T2.faceIndex].triangle.visible[j] 
-				= !Mesh2InMesh1.second[*(faceIndex2 + 3 * TI.T2.faceIndex + j)];
-				*/
-			}
-
-			if(T2Polygons[TI.T2.faceIndex].triangle.visible[0]
-			&& T2Polygons[TI.T2.faceIndex].triangle.visible[1]
-			&& T2Polygons[TI.T2.faceIndex].triangle.visible[2])
-				DEBUGBREAK
-			
-			E.v1 = PointInTriangle(TI.T2,TI.V1);
-			E.v2 = PointInTriangle(TI.T2,TI.V2);
-
-			//context->OutputToConsoleEx("T2: %d",TI.T2.faceIndex);
-			__ShowVxVector(context,E.v1.pointInTriangle);
-			__ShowVxVector(context,E.v1.point);
-			__ShowVxVector(context,E.v2.pointInTriangle);
-			__ShowVxVector(context,E.v2.point);
+		//context->OutputToConsoleEx("T2: %d",TI.T2.faceIndex);
+		__ShowVxVector(context,E.v1.pointInTriangle);
+		__ShowVxVector(context,E.v1.point);
+		__ShowVxVector(context,E.v2.pointInTriangle);
+		__ShowVxVector(context,E.v2.point);
 
 
-			T2Polygons[TI.T2.faceIndex].Edges.push_back(E);
-		}
+		T2Polygons[TI.T2.faceIndex].Edges.push_back(E);
 		
 	}//for i
 
@@ -546,9 +511,9 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 	int i = 0;
 
 	for(std::vector<bool>::iterator it = Mesh1TriangleMarks.begin();it != Mesh1TriangleMarks.end();it++,i++){
-		if(!*it && (Mesh1InMesh2[faceIndex1[i * 3]] != In
-			&& Mesh1InMesh2[faceIndex1[i * 3 + 1]] != In
-			&& Mesh1InMesh2[faceIndex1[i * 3 + 2]] != In)){
+		if(!*it && Mesh1InMesh2.second[faceIndex1[i * 3]] == false
+			&& Mesh1InMesh2.second[faceIndex1[i * 3 + 1]] == false
+			&& Mesh1InMesh2.second[faceIndex1[i * 3 + 2]] == false){
 			faceIndex1Back[remainingFace * 3] = faceIndex1[i * 3];
 			faceIndex1Back[remainingFace * 3 + 1] = faceIndex1[i * 3 + 1];
 			faceIndex1Back[remainingFace * 3 + 2] = faceIndex1[i * 3 + 2];
@@ -567,9 +532,10 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 
 	i = 0;
 	for(std::vector<bool>::iterator it = Mesh2TriangleMarks.begin();it != Mesh2TriangleMarks.end();it++,i++){
-		if(!*it && Mesh2InMesh1[faceIndex2[i * 3]] == In
-			&& Mesh2InMesh1[faceIndex2[i * 3 + 1]] == In
-			&& Mesh2InMesh1[faceIndex2[i * 3 + 2]] == In){
+		//notice: we had fliped it before
+		if(!*it && Mesh2InMesh1.second[faceIndex2[i * 3]] == false
+			&& Mesh2InMesh1.second[faceIndex2[i * 3 + 1]] == false
+			&& Mesh2InMesh1.second[faceIndex2[i * 3 + 2]] == false){
 			NewPoints.push_back( (*((VxVector*)(Mesh2Vertices + faceIndex2[i * 3] * Mesh2vStride )) + displacement) / scale1);
 			
 			//swap!
@@ -716,7 +682,6 @@ int GetAllVertexBuildingBlock(const CKBehaviorContext& BehContext)
 	    //std::vector<TriangleIntersection> TriangleIntersection = IntersectedTrianglesOf2Mesh(mesh,WatchMesh,watchPosition,context);
 	    CutMesh1ByMesh2(mesh,WatchMesh,displacement,myScale,watchScale,context);
 	}catch(std::string str){
-		throw str;
 	}
 	
 	beh->ActivateInput(0,FALSE);
