@@ -336,7 +336,7 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 						T1Polygons[TI.T1.faceIndex].triangle.visible[j] = true;
 						break;
 					case OnTheFace:
-						T1Polygons[TI.T1.faceIndex].triangle.visible[j] = true;
+						T1Polygons[TI.T1.faceIndex].triangle.visible[j] = false;
 						/*
 						InclusionRelation ir1 = PointInBody(T1Polygons[TI.T1.faceIndex].triangle.v[j],
 							VxVector(1.0f,1.0f,1.0f),mesh2,1,context,
