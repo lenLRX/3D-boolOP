@@ -30,6 +30,30 @@ public:
 	Triangle triangle;
 
 	void MakeChains(CKContext* context){
+		for(std::list<Edge>::iterator it1 = Edges.begin();it1!=Edges.end();it1++){
+			for(std::list<Edge>::iterator it2 = Edges.begin();it2!=Edges.end();it2++){
+				if(it1 == it2){
+					continue;
+				}
+
+				if((SameVertex(it1->v1.point,it2->v1.point) && SameVertex(it1->v2.point,it2->v2.point))
+					&& (SameVertex(it1->v1.point,it2->v2.point) && SameVertex(it1->v2.point,it2->v1.point))){
+					it1->valid = false;
+					it2->valid = false;
+				}
+			}
+		}
+
+		for(std::list<Edge>::iterator it = Edges.begin();it!=Edges.end();){
+			if(!it->valid || SameVertex(it->v1.point,it->v2.point)){
+				it = Edges.erase(it); 
+			}else{
+				it++;
+			}
+		}
+
+
+
 		while(Edges.size()){
 			Edge current = Edges.front();
 			Chain _chain;

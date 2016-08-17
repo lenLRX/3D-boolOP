@@ -10,6 +10,7 @@ public:
 		next = 0;
 		prev = 0;
 		used = false;
+		valid = true;
 	}
 
 	PointInTriangle v1;
@@ -18,6 +19,7 @@ public:
 	int next;
 	int prev;
 	bool used;
+	bool valid;
 };
 
 

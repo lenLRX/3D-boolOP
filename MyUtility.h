@@ -3,6 +3,7 @@
 
 #include "vxvector.h"
 #include <string>
+#include <cassert>
 
 static float VxVectorInnerProduct(VxVector v1,VxVector v2){
 	return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
@@ -76,15 +77,16 @@ struct FaceTuple
 };
 
 static float distance2line(VxVector a1,VxVector a2,VxVector pt){
+	
 	VxVector l = a2 - a1;
 	l.Normalize();
-	float length = VxVectorInnerProduct(l,pt - a1);
-	VxVector mid = a1 + length * (a2 - a1);
+	float length = VxVectorInnerProduct(a2 - a1,pt - a1);
+	VxVector mid = a1 + length * l;
 	return (pt - mid).Magnitude();
 }
 
 static bool SegmentIntersection(VxVector a1,
-    VxVector a2,VxVector b1,VxVector b2,VxVector ret){
+    VxVector a2,VxVector b1,VxVector b2,VxVector& ret){
 	VxVector a = a2 - a1;
 	VxVector lineb1 = b1 - a1;
 	VxVector lineb2 = b2 - a1;
@@ -93,13 +95,35 @@ static bool SegmentIntersection(VxVector a1,
 	if(sign >= 0)
 		return false;
 
-	float d1 = distance2line(a1,a2,b1);
-	float d2 = distance2line(a1,a2,b2);
+	double d1 = distance2line(a1,a2,b1);
+	double d2 = distance2line(a1,a2,b2);
 
-	float sum = d1 + d2;
+	double sum = d1 + d2;
 
 	ret = d1 / sum * a1 + d2 / sum * a2;
-	return true;
+
+	VxVector na = a2 - a1;
+	na.Normalize();
+	VxVector nb = b2 - b1;
+	nb.Normalize();
+
+	VxVector ar = ret - a1;
+	ar.Normalize();
+	VxVector br = ret - b2;
+	br.Normalize();
+
+
+	VxVector x = VxVectorCrossProduct(a2 - a1,b2 - b1);
+
+	float f = VxVectorInnerProduct(a2 - a1,b2 - b1);
+	float la = (a2 - a1).Magnitude();
+	float lb = (b2 - b1).Magnitude();
+	float cos = f/(la*lb);
+
+	if(SameVertex(na,ar) && SameVertex(nb,br))
+	    return true;
+	else
+		return false;
 }
 
 static void ShowVxVector(CKContext* context,const VxVector& v){

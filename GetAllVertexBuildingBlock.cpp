@@ -242,7 +242,7 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(CKMesh* mesh1,CKMe
 				IntersectionCount += intersections.size();
 				
 				for(size_t idx = 0;idx < intersections.size();idx++){
-					/*
+					
 					PointInTriangle p1(T1,intersections[idx].V1);
 					if(!p1.valid()){
 						context->OutputToConsoleEx("x: %f,y: %f,z %f",p1.pointInTriangle.x,p1.pointInTriangle.y,p1.pointInTriangle.z);
@@ -261,12 +261,12 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(CKMesh* mesh1,CKMe
 						DEBUGBREAK
 					}
 
-					PointInTriangle p4(T2,intersections[idx].V1);
+					PointInTriangle p4(T2,intersections[idx].V2);
 					if(!p4.valid()){
 						context->OutputToConsoleEx("x: %f,y: %f,z %f",p4.pointInTriangle.x,p4.pointInTriangle.y,p4.pointInTriangle.z);
 						DEBUGBREAK
 					}
-					*/
+					
 
 					results.push_back(intersections[idx]);
 				}
@@ -336,6 +336,8 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 						T1Polygons[TI.T1.faceIndex].triangle.visible[j] = true;
 						break;
 					case OnTheFace:
+						T1Polygons[TI.T1.faceIndex].triangle.visible[j] = true;
+						/*
 						InclusionRelation ir1 = PointInBody(T1Polygons[TI.T1.faceIndex].triangle.v[j],
 							VxVector(1.0f,1.0f,1.0f),mesh2,1,context,
 							T1Polygons[TI.T1.faceIndex].triangle.v[(j + 1) % 3 ] - T1Polygons[TI.T1.faceIndex].triangle.v[j],true);
@@ -353,6 +355,7 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 							T1Polygons[TI.T1.faceIndex].triangle.visible[j] = false;
 							//Mesh1InMesh2[*(faceIndex1 + 3 * TI.T1.faceIndex + j)] = Out;
 						}
+						*/
 						break;
 				}
 				/*
@@ -363,6 +366,16 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 
 			E.v1 = PointInTriangle(TI.T1,TI.V1);
 			E.v2 = PointInTriangle(TI.T1,TI.V2);
+
+			if(!E.v1.valid()){
+				context->OutputToConsoleEx("x: %f,y: %f,z %f",E.v1.pointInTriangle.x,E.v1.pointInTriangle.y,E.v1.pointInTriangle.z);
+				DEBUGBREAK
+			}
+			if(!E.v2.valid()){
+				context->OutputToConsoleEx("x: %f,y: %f,z %f",E.v1.pointInTriangle.x,E.v1.pointInTriangle.y,E.v1.pointInTriangle.z);
+				DEBUGBREAK
+			}
+
 
 			T1Polygons[TI.T1.faceIndex].Edges.push_back(E);
 		}
@@ -393,10 +406,10 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 							//Mesh2InMesh1[*(faceIndex2 + 3 * TI.T2.faceIndex + j)] = Out;
 						}
 						else if(Out == ir1 || Out == ir2){
-							T2Polygons[TI.T2.faceIndex].triangle.visible[j] = true;
+							T2Polygons[TI.T2.faceIndex].triangle.visible[j] = false;
 							//Mesh2InMesh1[*(faceIndex2 + 3 * TI.T2.faceIndex + j)] = Out;
 						}else{
-							T2Polygons[TI.T2.faceIndex].triangle.visible[j] = true;
+							T2Polygons[TI.T2.faceIndex].triangle.visible[j] = false;
 							//Mesh2InMesh1[*(faceIndex2 + 3 * TI.T2.faceIndex + j)] = In;
 						}
 						break;
@@ -414,6 +427,20 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 			
 			E.v1 = PointInTriangle(TI.T2,TI.V1);
 			E.v2 = PointInTriangle(TI.T2,TI.V2);
+
+
+			if(!E.v1.valid()){
+				context->OutputToConsoleEx("x: %f,y: %f,z %f",TI.V1.x,TI.V1.y,TI.V1.z);
+				context->OutputToConsoleEx("x: %f,y: %f,z %f",E.v1.pointInTriangle.x,E.v1.pointInTriangle.y,E.v1.pointInTriangle.z);
+				DEBUGBREAK
+			}
+
+			if(!E.v2.valid()){
+				context->OutputToConsoleEx("x: %f,y: %f,z %f",TI.V2.x,TI.V2.y,TI.V2.z);
+				context->OutputToConsoleEx("x: %f,y: %f,z %f",E.v2.pointInTriangle.x,E.v2.pointInTriangle.y,E.v2.pointInTriangle.z);
+				DEBUGBREAK
+			}
+
 
 			//context->OutputToConsoleEx("T2: %d",TI.T2.faceIndex);
 			__ShowVxVector(context,E.v1.pointInTriangle);
