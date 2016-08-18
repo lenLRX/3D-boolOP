@@ -204,8 +204,8 @@ typedef std::vector<TriangleIntersection> Intersections;
 static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2){
 	//context->OutputToConsoleEx("IntersectInplane");
 	Intersections ret;
-	bool T1inT2[3];
-	bool T2inT1[3];
+	bool T1inT2[3] = {false};
+	bool T2inT1[3] = {false};
 
 	int T1inT2Count = 0;
     int T2inT1Count = 0;
@@ -213,12 +213,12 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 	for(int i = 0;i < 3;i++){
 		PointInTriangle p1(T2,T1.v[i]);
 		PointInTriangle p2(T1,T2.v[i]);
-		if(p1.valid()){
+		if(p1.valid() && p1.OnTheEdge < 0){
 			T1inT2[i] = true;
 			T1inT2Count++;
 		}
 
-		if(p2.valid()){
+		if(p2.valid() && p2.OnTheEdge < 0){
 			T2inT1[i] = true;
 			T2inT1Count++;
 		}
@@ -226,6 +226,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 
 	if(3 == T1inT2Count){
 		if(T2inT1Count){
+			DEBUGBREAK
 			return Intersections();
 		}else{
 			for(int i = 0;i < 3;i++){
@@ -237,6 +238,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 		}
 	}else if(3 == T2inT1Count){
 		if(T1inT2Count){
+			DEBUGBREAK
 			return Intersections();
 		}else{
 			for(int i = 0;i < 3;i++){
@@ -248,6 +250,7 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 		}
 	}else if(0 == T1inT2Count){
 		if(0 == T2inT1Count){
+			//context->OutputToConsoleEx("0,0");
 			return Intersections();
 		}else if(1 == T2inT1Count){
 			int theT2PointinT1 = -1;//let it crash

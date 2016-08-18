@@ -79,8 +79,11 @@ struct FaceTuple
 static float distance2line(VxVector a1,VxVector a2,VxVector pt){
 	
 	VxVector l = a2 - a1;
+	assert(l.SquareMagnitude());
+	float la = l.Magnitude();
 	l.Normalize();
-	float length = VxVectorInnerProduct(a2 - a1,pt - a1);
+	
+	float length = VxVectorInnerProduct(a2 - a1,pt - a1)/la;
 	VxVector mid = a1 + length * l;
 	return (pt - mid).Magnitude();
 }
@@ -100,7 +103,7 @@ static bool SegmentIntersection(VxVector a1,
 
 	double sum = d1 + d2;
 
-	ret = d1 / sum * a1 + d2 / sum * a2;
+	ret = d1 / sum * b2 + d2 / sum * b1;
 
 	VxVector na = a2 - a1;
 	na.Normalize();
@@ -109,7 +112,7 @@ static bool SegmentIntersection(VxVector a1,
 
 	VxVector ar = ret - a1;
 	ar.Normalize();
-	VxVector br = ret - b2;
+	VxVector br = b2 - ret;
 	br.Normalize();
 
 
