@@ -35,6 +35,10 @@ public:
 
 	Triangle(VxVector _v1,VxVector _v2,VxVector _v3,CKVINDEX _faceIndex):
 	faceIndex(_faceIndex){
+		visible[0] = false;
+		visible[1] = false;
+		visible[2] = false;
+
 		v[0] = _v1;
 		v[1] = _v2;
 		v[2] = _v3;
@@ -171,6 +175,7 @@ struct TriangleIntersection{
 	TriangleIntersection(Triangle _T1,Triangle _T2,VxVector _V1,VxVector _V2,CKContext* context = NULL):
         T1(_T1),T2(_T2),V1(_V1),V2(_V2),T1valid(true),T2valid(true){
 
+			/*
 			if(context){
 			PointInTriangle p1(T1,V1);
 					if(!p1.valid()){
@@ -196,6 +201,7 @@ struct TriangleIntersection{
 						DEBUGBREAK
 					}
 		}
+		*/
 
 		}
 	Triangle T1,T2;

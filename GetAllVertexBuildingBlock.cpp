@@ -65,7 +65,7 @@ CKERROR CreateGetAllVertexBuildingBlockProto(CKBehaviorPrototype** pproto)
 	return CK_OK;
 }
 
-InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,CKContext* context,VxVector direction = VxVector(-1,-1,-1),bool review = false){
+InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,CKContext* context,VxVector direction = VxVector(0.414,0.414,-1),bool review = false){
 
 	CKDWORD vStride=0;
 
@@ -139,9 +139,15 @@ InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,C
 		
 
 		if(b){
-			IntersectionCount++;
+			PointInTriangle pointInTriangle(triangle,pt);
+			if(pointInTriangle.OnTheEdge < 0)
+			    IntersectionCount += 2;
+			else
+				IntersectionCount++;
 	    }
 	}
+
+	IntersectionCount = IntersectionCount / 2;
 
 	if(IntersectionCount % 2 == 1)
 		return In;
@@ -149,7 +155,7 @@ InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,C
 		return Out;
 }
 
-std::vector<InclusionRelation> Mesh1PointsInMesh2(CKMesh* mesh1,CKMesh* mesh2,VxVector displacement,VxVector scale1,VxVector scale2,int flag,CKContext* context){
+std::vector<InclusionRelation> Mesh1PointsInMesh2(VxBbox box,CKMesh* mesh1,CKMesh* mesh2,VxVector displacement,VxVector scale1,VxVector scale2,int flag,CKContext* context){
 	CKDWORD Mesh1vStride=0;
 	CKDWORD Mesh2vStride=0;
 	const BYTE* Mesh1Vertices = (BYTE*)mesh1->GetModifierVertices(&Mesh1vStride);
@@ -160,24 +166,39 @@ std::vector<InclusionRelation> Mesh1PointsInMesh2(CKMesh* mesh1,CKMesh* mesh2,Vx
 	std::vector<InclusionRelation> ret;
 	int count = 0;
 	
+	box = mesh2->GetLocalBox();
+
+	//context->OutputToConsoleEx("Max: %f %f %f",box.Max.x,box.Max.y,box.Max.z);
+	//context->OutputToConsoleEx("Min: %f %f %f",box.Min.x,box.Min.y,box.Min.z);
 	
 	for(int i=0; i<Mesh1VCount ;i++,Mesh1Vertices+=Mesh1vStride) {
 
 		VxVector TransformedPos = *(VxVector*)Mesh1Vertices;
+		/*
 		for(int j = 0;j < 3;j++){
 			TransformedPos.v[j] *= scale1.v[j];
 		}
+		*/
 
+		
 		TransformedPos += displacement;
 
-		ret.push_back(PointInBody(TransformedPos,scale2,mesh2,flag,context));
+		//context->OutputToConsoleEx("%f %f %f",TransformedPos.x,TransformedPos.y,TransformedPos.z);
+
+		//ret.push_back(PointInBody(TransformedPos,scale2,mesh2,flag,context));
+
+		
+		if(box.VectorIn(TransformedPos))
+		    ret.push_back(PointInBody(TransformedPos,scale2,mesh2,flag,context));
+		else
+			ret.push_back(Out);
 	}
 	
 
 	return ret;
 }
 
-std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(CKMesh* mesh1,CKMesh* mesh2,
+std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(VxBbox box,CKMesh* mesh1,CKMesh* mesh2,
 															  VxVector displacement,VxVector scale1,VxVector scale2,CKContext* context){
 	std::vector<TriangleIntersection> results;
 	//context->OutputToConsoleEx("IntersectedTrianglesOf2Mesh");
@@ -191,6 +212,15 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(CKMesh* mesh1,CKMe
 	int Mesh2FaceCount = mesh2->GetFaceCount();
 	const CKVINDEX* faceIndex1 = mesh1->GetFacesIndices();
 	const CKVINDEX* faceIndex2 = mesh2->GetFacesIndices();
+
+	VxBbox box1 = mesh1->GetLocalBox();
+	VxBbox box2 = mesh2->GetLocalBox();
+
+	for(int i = 0;i < 6;i++){
+		box1.v[i] *= 1.2f;
+		box2.v[i] *= 1.2f;
+	}
+
 
 	int IntersectionCount = 0;
 
@@ -207,12 +237,16 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(CKMesh* mesh1,CKMe
 	    VxVector T1v2 = *((VxVector*)(Mesh1Vertices + T1f2*Mesh1vStride ));
 	    VxVector T1v3 = *((VxVector*)(Mesh1Vertices + T1f3*Mesh1vStride ));
 
+		/*
 		for(int k = 0;k < 3;k++){
 			T1v1.v[k] *= scale1.v[k];
 			T1v2.v[k] *= scale1.v[k];
 			T1v3.v[k] *= scale1.v[k];
 		}
+		*/
 
+		if(!(box2.VectorIn(T1v1 - displacement) || box2.VectorIn(T1v2  - displacement) || box2.VectorIn(T1v3  - displacement)))
+			continue;
 
 		Triangle T1(T1v1,T1v2,T1v3,i);
 
@@ -227,11 +261,16 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(CKMesh* mesh1,CKMe
 			VxVector T2v2 = *((VxVector*)(Mesh2Vertices + T2f2*Mesh2vStride )) + displacement;
 			VxVector T2v3 = *((VxVector*)(Mesh2Vertices + T2f3*Mesh2vStride )) + displacement;
 
+			if(!(box1.VectorIn(T2v1) || box1.VectorIn(T2v2) || box1.VectorIn(T2v3)))
+			    continue;
+
+			/*
 			for(int k = 0;k < 3;k++){
 			    T2v1.v[k] *= scale2.v[k];
 			    T2v2.v[k] *= scale2.v[k];
 			    T2v3.v[k] *= scale2.v[k];
 		    }
+			*/
 
 			Triangle T2(T2v1,T2v2,T2v3,j);
 
@@ -242,7 +281,7 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(CKMesh* mesh1,CKMe
 				IntersectionCount += intersections.size();
 				
 				for(size_t idx = 0;idx < intersections.size();idx++){
-					
+					/*
 					PointInTriangle p1(T1,intersections[idx].V1);
 					if(!p1.valid()){
 						context->OutputToConsoleEx("x: %f,y: %f,z %f",p1.pointInTriangle.x,p1.pointInTriangle.y,p1.pointInTriangle.z);
@@ -266,7 +305,7 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(CKMesh* mesh1,CKMe
 						context->OutputToConsoleEx("x: %f,y: %f,z %f",p4.pointInTriangle.x,p4.pointInTriangle.y,p4.pointInTriangle.z);
 						DEBUGBREAK
 					}
-					
+					*/
 
 					results.push_back(intersections[idx]);
 				}
@@ -276,11 +315,18 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(CKMesh* mesh1,CKMe
 	return results;
 }
 
-void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
+void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,VxBbox box1,VxBbox box2,
 					 VxVector displacement,VxVector scale1,VxVector scale2,CKContext* context){
+	context->OutputToConsoleEx("box1 Max: %f %f %f",box1.Max.x,box1.Max.y,box1.Max.z);
+	context->OutputToConsoleEx("box1 Min: %f %f %f",box1.Min.x,box1.Min.y,box1.Min.z);
+	context->OutputToConsoleEx("box2 Max: %f %f %f",box2.Max.x,box2.Max.y,box2.Max.z);
+	context->OutputToConsoleEx("box2 Min: %f %f %f",box2.Min.x,box2.Min.y,box2.Min.z);
+    box1.Intersect(box2);
+    VxBbox box = box1;
+	FILE* fp = fopen("F:\\virdbg\\log.txt","w+");
     srand(time(NULL));
-    std::vector<InclusionRelation> Mesh1InMesh2 = Mesh1PointsInMesh2(mesh1,mesh2,-displacement,scale1,scale2,1,context);
-    std::vector<InclusionRelation> Mesh2InMesh1 = Mesh1PointsInMesh2(mesh2,mesh1, displacement,scale2,scale1,-1,context);
+    std::vector<InclusionRelation> Mesh1InMesh2 = Mesh1PointsInMesh2(box,mesh1,mesh2,-displacement,scale1,scale2,1,context);
+    std::vector<InclusionRelation> Mesh2InMesh1 = Mesh1PointsInMesh2(box,mesh2,mesh1, displacement,scale2,scale1,-1,context);
 
 	/*
 	size_t s = Mesh2InMesh1.second.size();
@@ -301,7 +347,7 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 	CKVINDEX* faceIndex1 = mesh1->GetFacesIndices();
 	CKVINDEX* faceIndex2 = mesh2->GetFacesIndices();
 
-	std::vector<TriangleIntersection> TriangleIntersections = IntersectedTrianglesOf2Mesh(mesh1,mesh2,displacement,scale1,scale2,context);
+	std::vector<TriangleIntersection> TriangleIntersections = IntersectedTrianglesOf2Mesh(box,mesh1,mesh2,displacement,scale1,scale2,context);
 
 	size_t IntersectionSize = TriangleIntersections.size();
 
@@ -309,6 +355,7 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 	std::vector<bool> Mesh2TriangleMarks(Mesh2FaceCount,false);
 
 	std::vector<int> NewFaces;
+	std::vector<VxVector> NewPoints;
 
 	std::vector<Polygon> T1Polygons(Mesh1FaceCount);
 	std::set<int> T1Triangles;
@@ -361,6 +408,15 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 				T1Polygons[TI.T1.faceIndex].triangle.visible[j]
 				= !Mesh1InMesh2[*(faceIndex1 + 3 * TI.T1.faceIndex + j)];
 				*/
+			}
+
+			int vi = T1Polygons[TI.T1.faceIndex].triangle.visible[0]
+			+ T1Polygons[TI.T1.faceIndex].triangle.visible[1]
+			+ T1Polygons[TI.T1.faceIndex].triangle.visible[3];
+
+			if(vi == 0 || vi == 3){
+				
+				continue;
 			}
 
 			E.v1 = PointInTriangle(TI.T1,TI.V1);
@@ -423,11 +479,33 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 				*/
 			}
 
-			if(T2Polygons[TI.T2.faceIndex].triangle.visible[0]
+			int vi = T2Polygons[TI.T2.faceIndex].triangle.visible[0]
 			+ T2Polygons[TI.T2.faceIndex].triangle.visible[1]
-			+ T2Polygons[TI.T2.faceIndex].triangle.visible[2] == 0)
+			+ T2Polygons[TI.T2.faceIndex].triangle.visible[2];
+
+			if(vi == 0 || vi == 3){
+				
 				continue;
-			
+			}
+
+
+			/*
+			fprintf(fp,"visible: %d %d %d \n",T2Polygons[TI.T2.faceIndex].triangle.visible[0],
+				T2Polygons[TI.T2.faceIndex].triangle.visible[1],T2Polygons[TI.T2.faceIndex].triangle.visible[2]);
+
+			fprintf(fp,"IR: %d %d %d \n",Mesh2InMesh1[*(faceIndex2 + 3 * TI.T2.faceIndex + 0)],
+					Mesh2InMesh1[*(faceIndex2 + 3 * TI.T2.faceIndex + 1)],Mesh2InMesh1[*(faceIndex2 + 3 * TI.T2.faceIndex + 2)]);
+
+			for(int j = 0;j < 3;j++)
+			    fprintf(fp,"T1.v[%d] : %f %f %f \n",j,TI.T1.v[j].x,TI.T1.v[j].y,TI.T1.v[j].z);
+
+			for(int j = 0;j < 3;j++)
+			    fprintf(fp,"T2.v[%d] : %f %f %f \n",j,TI.T2.v[j].x,TI.T2.v[j].y,TI.T2.v[j].z);
+
+			fprintf(fp,"V1 x: %f,y: %f,z %f \n",TI.V1.x,TI.V1.y,TI.V1.z);
+			fprintf(fp,"V2 x: %f,y: %f,z %f \n",TI.V2.x,TI.V2.y,TI.V2.z);
+			*/
+
 			E.v1 = PointInTriangle(TI.T2,TI.V1);
 			E.v2 = PointInTriangle(TI.T2,TI.V2);
 
@@ -456,6 +534,8 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 		}
 		
 	}//for i
+
+	fclose(fp);
 
 	//context->OutputToConsoleEx("T1Triangles.size %d",T1Triangles.size());
 	//context->OutputToConsoleEx("T2Triangles.size %d",T2Triangles.size());
@@ -575,10 +655,23 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 
 	int i = 0;
 
+	/*
 	for(std::vector<bool>::iterator it = Mesh1TriangleMarks.begin();it != Mesh1TriangleMarks.end();it++,i++){
 		if(!*it && (Mesh1InMesh2[faceIndex1[i * 3]] != In
 			&& Mesh1InMesh2[faceIndex1[i * 3 + 1]] != In
 			&& Mesh1InMesh2[faceIndex1[i * 3 + 2]] != In)){
+			faceIndex1Back[remainingFace * 3] = faceIndex1[i * 3];
+			faceIndex1Back[remainingFace * 3 + 1] = faceIndex1[i * 3 + 1];
+			faceIndex1Back[remainingFace * 3 + 2] = faceIndex1[i * 3 + 2];
+			remainingFace++;
+		}
+	}
+	*/
+
+	for(std::vector<bool>::iterator it = Mesh1TriangleMarks.begin();it != Mesh1TriangleMarks.end();it++,i++){
+		if(!*it && (Mesh1InMesh2[faceIndex1[i * 3]] == Out
+			&& Mesh1InMesh2[faceIndex1[i * 3 + 1]] == Out
+			&& Mesh1InMesh2[faceIndex1[i * 3 + 2]] == Out)){
 			faceIndex1Back[remainingFace * 3] = faceIndex1[i * 3];
 			faceIndex1Back[remainingFace * 3 + 1] = faceIndex1[i * 3 + 1];
 			faceIndex1Back[remainingFace * 3 + 2] = faceIndex1[i * 3 + 2];
@@ -592,8 +685,6 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 	faceIndex1 = mesh1->GetFacesIndices();
 
 	memcpy(faceIndex1,faceIndex1Back,remainingFace * 3 * sizeof(CKVINDEX));
-
-	std::vector<VxVector> NewPoints;
 
 	i = 0;
 	for(std::vector<bool>::iterator it = Mesh2TriangleMarks.begin();it != Mesh2TriangleMarks.end();it++,i++){
@@ -702,6 +793,9 @@ int GetAllVertexBuildingBlock(const CKBehaviorContext& BehContext)
 
 	CK3dEntity* watchEnt = (CK3dEntity*)beh->GetInputParameterObject(0);
 
+	VxBbox box1 = ent->GetBoundingBox();
+	VxBbox box2 = watchEnt->GetBoundingBox();
+
 	VxVector watchScale;
 
 	watchEnt->GetScale(&watchScale);
@@ -744,7 +838,7 @@ int GetAllVertexBuildingBlock(const CKBehaviorContext& BehContext)
 
 	try{
 	    //std::vector<TriangleIntersection> TriangleIntersection = IntersectedTrianglesOf2Mesh(mesh,WatchMesh,watchPosition,context);
-	    CutMesh1ByMesh2(mesh,WatchMesh,displacement,myScale,watchScale,context);
+	    CutMesh1ByMesh2(mesh,WatchMesh,box1,box2,displacement,myScale,watchScale,context);
 	}catch(std::string str){
 		throw str;
 	}
