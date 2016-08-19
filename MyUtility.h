@@ -115,6 +115,12 @@ static bool SegmentIntersection(VxVector a1,
 	VxVector br = b2 - ret;
 	br.Normalize();
 
+	VxVector ar2 = a2 - ret;
+	ar2.Normalize();
+
+	VxVector br2 = ret - b1;
+	br2.Normalize();
+
 
 	VxVector x = VxVectorCrossProduct(a2 - a1,b2 - b1);
 
@@ -123,7 +129,7 @@ static bool SegmentIntersection(VxVector a1,
 	float lb = (b2 - b1).Magnitude();
 	float cos = f/(la*lb);
 
-	if(SameVertex(na,ar) && SameVertex(nb,br))
+	if(SameVertex(na,ar) && SameVertex(nb,br) && SameVertex(na,ar2) && SameVertex(nb,br2))
 	    return true;
 	else
 		return false;

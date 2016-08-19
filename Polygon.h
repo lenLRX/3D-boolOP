@@ -379,6 +379,10 @@ public:
 						int startEdge = it->Edges.front().v1.OnTheEdge;
 						int endEdge = it->Edges.back().v2.OnTheEdge;
 
+						if(endEdge < 0 || startEdge < 0){
+							int i = -1;
+						}
+
 						PointInTriangle _lastPoint = it->Edges.back().v2;
 
 						for(std::vector<Chain>::reverse_iterator rit = chainsOnSameEdge[endEdge].rbegin(); rit != chainsOnSameEdge[endEdge].rend(); rit++ ){
@@ -497,8 +501,8 @@ public:
 						
 						//check direction
 
-						if(SameVertex(norm,triangle.norm)){
-							it->reverse();
+						if(SameVertex(lastnorm,triangle.norm)){
+							lastChain[i].Edges.reverse();
 							
 							std::list<Edge>::iterator end = lastChain[i].Edges.end();
 							for(std::list<Edge>::iterator Edgeit = lastChain[i].Edges.begin(); Edgeit != lastChain[i].Edges.end() ;Edgeit++){
@@ -518,6 +522,10 @@ public:
 
 						int startEdge = farChain.Edges.front().v1.OnTheEdge;
 						int endEdge = farChain.Edges.back().v2.OnTheEdge;
+
+						if(endEdge < 0 || startEdge < 0){
+							int i = -1;
+						}
 
 						area.Boundary = farChain;//just copy
 

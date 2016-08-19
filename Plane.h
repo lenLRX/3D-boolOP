@@ -84,7 +84,7 @@ public:
 		if(fabs(dotP) < 0.01){
 			//throw std::string("RayIntersectTest  ") + std::string(__FILE__);
 			//onThePlane = true;
-			if(fabs(VxVectorInnerProduct(point - pt,norm)) < 0.01){
+			if(fabs(VxVectorCrossProduct(point - pt,norm).SquareMagnitude()) < 0.01){
 			    isParallel = true;
 				ret = pt;
 				return true;

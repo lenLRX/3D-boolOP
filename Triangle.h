@@ -84,11 +84,11 @@ public:
 		if(plane.RayIntersectTest(pt,line,_onThePlane,_parallel,IntersectionPoint)){
 			VxVector AP = IntersectionPoint - v[0];
 			float gamma = VxVectorInnerProduct(AP, _v);
-			if(gamma >= 0 && gamma <= 1) {
+			if(gamma >= 0 - 0.001 && gamma <= 1 + 0.001) {
 				float beta = VxVectorInnerProduct(AP, _w);
-				if(beta >= 0  && beta <= 1) {
+				if(beta >= 0 - 0.001  && beta <= 1 + 0.001) {
                     float alpha = 1 - gamma - beta;
-					if(alpha >= 0  && alpha <=1 ){
+					if(alpha >= 0 - 0.001  && alpha <= 1 + 0.001){
 						onThePlane = _onThePlane;
 						isParallel = _parallel;
 						return true;
@@ -160,6 +160,14 @@ public:
 
 struct TriangleIntersection{
 	TriangleIntersection(){}
+	TriangleIntersection(const TriangleIntersection& TI){
+		T1 = TI.T1;
+		T2 = TI.T2;
+		V1 = TI.V1;
+		V2 = TI.V2;
+		T1valid = TI.T1valid;
+		T2valid = TI.T2valid;
+	}
 	TriangleIntersection(Triangle _T1,Triangle _T2,VxVector _V1,VxVector _V2,CKContext* context = NULL):
         T1(_T1),T2(_T2),V1(_V1),V2(_V2),T1valid(true),T2valid(true){
 
@@ -209,7 +217,6 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 
 	int T1inT2Count = 0;
     int T2inT1Count = 0;
-
 	for(int i = 0;i < 3;i++){
 		PointInTriangle p1(T2,T1.v[i]);
 		PointInTriangle p2(T1,T2.v[i]);
@@ -250,7 +257,27 @@ static Intersections IntersectInplane(CKContext* context,Triangle T1,Triangle T2
 		}
 	}else if(0 == T1inT2Count){
 		if(0 == T2inT1Count){
-			//context->OutputToConsoleEx("0,0");
+			/*
+			for(int i = 0;i < 3;i++){
+				std::vector<VxVector> x;
+				for(int j = 0; j < 3;j++){
+					VxVector cross;
+					bool b = SegmentIntersection(T1.v[i],T1.v[(i + 1) % 3],T2.v[j],T2.v[(j + 1) % 3],cross);
+					if(b){
+						x.push_back(cross);
+					}
+				}
+
+				if(x.size() >= 2){
+					TriangleIntersection intersection(T1,T2,x[0],x[1],context);
+					intersection.T1valid = false;
+					intersection.T2valid = true;
+					ret.push_back(intersection);
+					return ret;
+				}
+			}
+			return ret;
+			*/
 			return Intersections();
 		}else if(1 == T2inT1Count){
 			int theT2PointinT1 = -1;//let it crash

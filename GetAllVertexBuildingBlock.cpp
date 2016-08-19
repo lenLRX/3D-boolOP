@@ -118,7 +118,7 @@ InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,C
 		bool isParallel = false;
 		bool b = triangle.VxVevtorIntersectTriangle(pt,line,onThePlane,isParallel,intersectionPoint);
 
-		if(onThePlane && !review)
+		if(onThePlane && b)
 			return OnTheFace;
 
 		if(isParallel && b){
@@ -138,7 +138,7 @@ InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,C
 		*/
 		
 
-		if(b && !onThePlane && !isParallel){
+		if(b){
 			IntersectionCount++;
 	    }
 	}
@@ -317,12 +317,11 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 
 	for(size_t i = 0; i < IntersectionSize ; i++){
 		TriangleIntersection& TI = TriangleIntersections[i];
-		Mesh1TriangleMarks[TI.T1.faceIndex] = true;
-		Mesh2TriangleMarks[TI.T2.faceIndex] = true;
 
 		Edge E;
 
 		if(TI.T1valid){
+			Mesh1TriangleMarks[TI.T1.faceIndex] = true;
 			T1Polygons[TI.T1.faceIndex].triangle = TI.T1;
 
 			T1Triangles.insert(TI.T1.faceIndex);
@@ -381,6 +380,7 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 		}
 
 		if(TI.T2valid){
+			Mesh2TriangleMarks[TI.T2.faceIndex] = true;
 
 			T2Polygons[TI.T2.faceIndex].triangle = TI.T2;
 
@@ -395,6 +395,8 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 						T2Polygons[TI.T2.faceIndex].triangle.visible[j] = true;
 						break;
 					case OnTheFace:
+						T2Polygons[TI.T2.faceIndex].triangle.visible[j] = false;
+						/*
 						InclusionRelation ir1 = PointInBody(T2Polygons[TI.T2.faceIndex].triangle.v[j],
 							VxVector(1.0f,1.0f,1.0f),mesh1,1,context,
 							T2Polygons[TI.T2.faceIndex].triangle.v[(j + 1) % 3 ] - T2Polygons[TI.T2.faceIndex].triangle.v[j],true);
@@ -412,6 +414,7 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 							T2Polygons[TI.T2.faceIndex].triangle.visible[j] = false;
 							//Mesh2InMesh1[*(faceIndex2 + 3 * TI.T2.faceIndex + j)] = In;
 						}
+						*/
 						break;
 				}
 				/*
@@ -421,9 +424,9 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,
 			}
 
 			if(T2Polygons[TI.T2.faceIndex].triangle.visible[0]
-			&& T2Polygons[TI.T2.faceIndex].triangle.visible[1]
-			&& T2Polygons[TI.T2.faceIndex].triangle.visible[2])
-				DEBUGBREAK
+			+ T2Polygons[TI.T2.faceIndex].triangle.visible[1]
+			+ T2Polygons[TI.T2.faceIndex].triangle.visible[2] == 0)
+				continue;
 			
 			E.v1 = PointInTriangle(TI.T2,TI.V1);
 			E.v2 = PointInTriangle(TI.T2,TI.V2);
