@@ -65,7 +65,7 @@ CKERROR CreateGetAllVertexBuildingBlockProto(CKBehaviorPrototype** pproto)
 	return CK_OK;
 }
 
-InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,CKContext* context,VxVector direction = VxVector(0.414,0.414,-1),bool review = false){
+InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,CKContext* context,VxVector direction = VxVector(0,-1,-1),bool review = false){
 
 	CKDWORD vStride=0;
 
@@ -78,7 +78,7 @@ InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,C
 
 	VxVector line = direction;
 
-	//line = VxVector(-(float)(rand() + 1)/(float)RAND_MAX,-(float)(rand() + 1)/(float)RAND_MAX,-(float)(rand() + 1)/(float)RAND_MAX);
+	line = VxVector(0,1,0);//(float)(rand() + 1)/(float)RAND_MAX * 0.05
 
 	//context->OutputToConsoleEx("line: %f,%f,%f",line.x,line.y,line.z);
 
@@ -137,7 +137,10 @@ InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,C
 		}
 		*/
 		
+		if(b)
+			IntersectionCount++;
 
+		/*
 		if(b){
 			PointInTriangle pointInTriangle(triangle,pt);
 			if(pointInTriangle.OnTheEdge < 0)
@@ -145,9 +148,10 @@ InclusionRelation PointInBody(VxVector pt,VxVector scale,CKMesh* mesh,int flag,C
 			else
 				IntersectionCount++;
 	    }
+		*/
 	}
 
-	IntersectionCount = IntersectionCount / 2;
+	//IntersectionCount = IntersectionCount / 2;
 
 	if(IntersectionCount % 2 == 1)
 		return In;
@@ -168,6 +172,10 @@ std::vector<InclusionRelation> Mesh1PointsInMesh2(VxBbox box,CKMesh* mesh1,CKMes
 	
 	box = mesh2->GetLocalBox();
 
+	for(int i = 0;i < 6;i++){
+		box.v[i] *= 1.2f;
+	}
+
 	//context->OutputToConsoleEx("Max: %f %f %f",box.Max.x,box.Max.y,box.Max.z);
 	//context->OutputToConsoleEx("Min: %f %f %f",box.Min.x,box.Min.y,box.Min.z);
 	
@@ -182,16 +190,32 @@ std::vector<InclusionRelation> Mesh1PointsInMesh2(VxBbox box,CKMesh* mesh1,CKMes
 
 		
 		TransformedPos += displacement;
+			
 
-		//context->OutputToConsoleEx("%f %f %f",TransformedPos.x,TransformedPos.y,TransformedPos.z);
+		int Count[3] = {0};
 
-		//ret.push_back(PointInBody(TransformedPos,scale2,mesh2,flag,context));
+		for(int j = 0 ;j < 1;j++){
+			InclusionRelation ir = PointInBody(TransformedPos,scale2,mesh2,flag,context);
+			Count[ir]++;
+		}
 
-		
+		int max = -1;
+		int pos = -1;
+
+		for(int j = 0 ;j < 3;j++){
+			if(max < Count[j]){
+				max = Count[j];
+				pos = j;
+			}
+		}
+		ret.push_back((InclusionRelation)pos);
+
+		/*
 		if(box.VectorIn(TransformedPos))
 		    ret.push_back(PointInBody(TransformedPos,scale2,mesh2,flag,context));
 		else
 			ret.push_back(Out);
+			*/
 	}
 	
 
@@ -245,8 +269,10 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(VxBbox box,CKMesh*
 		}
 		*/
 
+		/*
 		if(!(box2.VectorIn(T1v1 - displacement) || box2.VectorIn(T1v2  - displacement) || box2.VectorIn(T1v3  - displacement)))
 			continue;
+			*/
 
 		Triangle T1(T1v1,T1v2,T1v3,i);
 
@@ -261,8 +287,10 @@ std::vector<TriangleIntersection> IntersectedTrianglesOf2Mesh(VxBbox box,CKMesh*
 			VxVector T2v2 = *((VxVector*)(Mesh2Vertices + T2f2*Mesh2vStride )) + displacement;
 			VxVector T2v3 = *((VxVector*)(Mesh2Vertices + T2f3*Mesh2vStride )) + displacement;
 
+			/*
 			if(!(box1.VectorIn(T2v1) || box1.VectorIn(T2v2) || box1.VectorIn(T2v3)))
 			    continue;
+				*/
 
 			/*
 			for(int k = 0;k < 3;k++){
@@ -323,7 +351,6 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,VxBbox box1,VxBbox box2,
 	context->OutputToConsoleEx("box2 Min: %f %f %f",box2.Min.x,box2.Min.y,box2.Min.z);
     box1.Intersect(box2);
     VxBbox box = box1;
-	FILE* fp = fopen("F:\\virdbg\\log.txt","w+");
     srand(time(NULL));
     std::vector<InclusionRelation> Mesh1InMesh2 = Mesh1PointsInMesh2(box,mesh1,mesh2,-displacement,scale1,scale2,1,context);
     std::vector<InclusionRelation> Mesh2InMesh1 = Mesh1PointsInMesh2(box,mesh2,mesh1, displacement,scale2,scale1,-1,context);
@@ -534,8 +561,6 @@ void CutMesh1ByMesh2(CKMesh* mesh1,CKMesh* mesh2,VxBbox box1,VxBbox box2,
 		}
 		
 	}//for i
-
-	fclose(fp);
 
 	//context->OutputToConsoleEx("T1Triangles.size %d",T1Triangles.size());
 	//context->OutputToConsoleEx("T2Triangles.size %d",T2Triangles.size());

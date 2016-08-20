@@ -88,11 +88,11 @@ public:
 		if(plane.RayIntersectTest(pt,line,_onThePlane,_parallel,IntersectionPoint)){
 			VxVector AP = IntersectionPoint - v[0];
 			float gamma = VxVectorInnerProduct(AP, _v);
-			if(gamma >= 0 - 0.001 && gamma <= 1 + 0.001) {
+			if(gamma >= 0 && gamma <= 1) {
 				float beta = VxVectorInnerProduct(AP, _w);
-				if(beta >= 0 - 0.001  && beta <= 1 + 0.001) {
+				if(beta >= 0   && beta <= 1) {
                     float alpha = 1 - gamma - beta;
-					if(alpha >= 0 - 0.001  && alpha <= 1 + 0.001){
+					if(alpha >= 0  && alpha <= 1){
 						onThePlane = _onThePlane;
 						isParallel = _parallel;
 						return true;

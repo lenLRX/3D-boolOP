@@ -52,18 +52,6 @@ public:
 	bool RayIntersectTest(VxVector pt,VxVector line,VxVector& ret){
 		float dotP = VxVectorInnerProduct(line,norm);
 		if(dotP == 0.0f){
-			/*
-			float d = - VxVectorInnerProduct(norm , point);
-			float dis = VxVectorInnerProduct(norm , pt) + d;
-			float direction = 
-			if(dis < 0 - 0.001){
-				throw "dis < 0 - 0.001";
-			    return false;
-			}else{
-				ret = pt - dis * norm;
-				return true;
-			}
-			*/
 			return false;
 		}
 		else{
@@ -81,6 +69,7 @@ public:
 
 	bool RayIntersectTest(VxVector pt,VxVector line,bool& onThePlane,bool& isParallel,VxVector& ret){
 		float dotP = VxVectorInnerProduct(line,norm);
+		/*
 		if(fabs(dotP) < 0.01){
 			//throw std::string("RayIntersectTest  ") + std::string(__FILE__);
 			//onThePlane = true;
@@ -90,14 +79,27 @@ public:
 				return true;
 			}
 			return false;
+		}*/
+		if(dotP == 0.0f){
+			return false;
 		}
 		else{
 			float t = VxVectorInnerProduct(point - pt,norm)/dotP;
+			/*
 			if(fabs(t) < 0.01){
 				onThePlane = true;
 				ret = pt + (t * line);
 			    return true;
 			}else if(t> 0){
+				ret = pt + (t * line);
+				return true;
+			}
+			else{
+				ret = pt + (t * line);
+				return false;
+			}
+			*/
+			if(t> 0){
 				ret = pt + (t * line);
 				return true;
 			}
