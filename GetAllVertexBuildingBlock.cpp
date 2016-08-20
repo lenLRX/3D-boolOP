@@ -23,16 +23,16 @@ int GetAllVertexBuildingBlockCallBack(const CKBehaviorContext& BehContext);
 
 CKObjectDeclaration	*FillBehaviorGetAllVertexBuildingBlockDecl()
 {
-	CKObjectDeclaration *od = CreateCKObjectDeclaration("GetAllVertexBuildingBlock");
+	CKObjectDeclaration *od = CreateCKObjectDeclaration("bool cut");
 	
 	od->SetType(CKDLL_BEHAVIORPROTOTYPE);
 	od->SetVersion(0x00000001);
 	od->SetCreationFunction(CreateGetAllVertexBuildingBlockProto);
 	od->SetDescription("Enter your description here");
-	od->SetCategory("UserBBs");
+	od->SetCategory("DLVR");
 	od->SetGuid(CKGUID(0x4acca9a7, 0xb22da652));
 	od->SetAuthorGuid(CKGUID(0x56495254,0x4f4f4c53));
-	od->SetAuthorName("Virtools");
+	od->SetAuthorName("545976176@qq.com");
 	od->SetCompatibleClassId(CKCID_BEOBJECT);
 
 	return od;
@@ -40,7 +40,7 @@ CKObjectDeclaration	*FillBehaviorGetAllVertexBuildingBlockDecl()
 
 CKERROR CreateGetAllVertexBuildingBlockProto(CKBehaviorPrototype** pproto)
 {
-	CKBehaviorPrototype *proto = CreateCKBehaviorPrototype("GetAllVertexBuildingBlock");
+	CKBehaviorPrototype *proto = CreateCKBehaviorPrototype("bool cut");
 	if (!proto) {
 		return CKERR_OUTOFMEMORY;
 	}
@@ -52,7 +52,7 @@ CKERROR CreateGetAllVertexBuildingBlockProto(CKBehaviorPrototype** pproto)
 	proto->DeclareOutput("Out0");
 
 
-	proto->DeclareInParameter("WatchObject", CKPGUID_3DENTITY );
+	proto->DeclareInParameter("cutter", CKPGUID_3DENTITY );
 
 //----	Local Parameters Declaration
 
